@@ -99,6 +99,9 @@ func readCompileTxt(compileTxtPath string) *CompileTxt {
 
 	lines := make([]string, 0)
 	scanner := bufio.NewScanner(file)
+	const maxCapacity = 1024*1024  
+        buf := make([]byte, maxCapacity)
+        scanner.Buffer(buf, maxCapacity)
 	for scanner.Scan() {
 		line := scanner.Text()
 		lines = append(lines, line)
@@ -143,6 +146,9 @@ func countLoc(srcPath string) int64 {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+        const maxCapacity = 1024*1024
+        buf := make([]byte, maxCapacity)
+        scanner.Buffer(buf, maxCapacity)
 
 	var nonEmptyLinesCount int64
 
