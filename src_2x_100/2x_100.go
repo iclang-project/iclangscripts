@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// todo commits print id
+
 var projects = [6]string{"llvm", "cvc5", "z3", "sqlite", "cpython", "postgres"}
 
 func main() {
@@ -42,6 +44,7 @@ func main() {
 	startTime := time.Now()
 
 	totalTasks := len(projects)
+	passChan := make(chan int, totalTasks)
 
 	for i := 0; i < totalTasks; i += 1 {
 		wg.Add(1)
@@ -102,7 +105,8 @@ func main() {
 			// 100
 			// format: new -> old: commitId yes|no|error
 			lines := utils.ReadFileToLines(project100CommitsPath)
-			for i, line := range lines {
+			commitNum := 0
+			for _, line := range lines {
 				// read commitId and flag
 				s2 := strings.SplitN(line, " ", 2)
 				commitId := s2[0]
@@ -112,7 +116,8 @@ func main() {
 				}
 
 				// git checkout
-				fmt.Printf("Task %d inc build %d\n", id+1, i)
+				commitNum += 1
+				fmt.Printf("Task %d inc build %d\n", id+1, commitNum)
 				gitCheckoutCmdStr :=  "cd " + projectSrcPath +
 					" && " + gitStr + " checkout " + commitId + " >> " + projectLogPath + " 2>&1"
 				gitCheckoutCmd := exec.Command("/bin/bash", "-c", gitCheckoutCmdStr)
@@ -148,8 +153,8 @@ func main() {
 				BuildTimeMs: 0,
 			}
 			// Skip first full
-			for i := 1; i < len(commitsSta); i += 1 {
-				commitStaSum.Add(commitsSta[i])
+			for j := 1; j < len(commitsSta); j += 1 {
+				commitStaSum.Add(commitsSta[j])
 			}
 			commitsSta = append(commitsSta, commitStaSum)
 
@@ -167,11 +172,24 @@ func main() {
 			}
 
 			fmt.Printf("Task %d done\n", id+1)
+			passChan <- id
 		}(i)
 		time.Sleep(100 * time.Millisecond)
 	}
 
 	wg.Wait()
-	fmt.Println("All tasks done")
+	fmt.Println("\nAll tasks done:")
+	close(passChan)
+	status := make([]int, totalTasks)
+	for passId := range passChan {
+		status[passId] = 1
+	}
+	for i := 0; i < totalTasks; i += 1 {
+		if status[i] == 1 {
+			fmt.Printf("[%d/%d] %s passed\n", i+1, totalTasks, projects[i])
+		} else {
+			fmt.Printf("[%d/%d] %s failed\n", i+1, totalTasks, projects[i])
+		}
+	}
 	fmt.Printf("Total time: %s\n", time.Since(startTime))
 }

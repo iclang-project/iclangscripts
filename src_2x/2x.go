@@ -46,6 +46,7 @@ func main() {
 	startTime := time.Now()
 
 	totalTasks := len(projects)
+	passChan := make(chan int, totalTasks)
 
 	for i := 0; i < totalTasks; i += 1 {
 		wg.Add(1)
@@ -71,14 +72,27 @@ func main() {
 			_, err := cmd.CombinedOutput()
 			if err != nil {
 				fmt.Printf("Task %d error, see %s for more details.\n", id+1, projectLogPath)
-			} else {
-				fmt.Printf("Task %d done\n", id+1)
+				return
 			}
+			fmt.Printf("Task %d done\n", id+1)
+			passChan <- id
 		}(i)
 		time.Sleep(100 * time.Millisecond)
 	}
 
 	wg.Wait()
-	fmt.Println("All tasks done")
+	fmt.Println("\nAll tasks done:")
+	close(passChan)
+	status := make([]int, totalTasks)
+	for passId := range passChan {
+		status[passId] = 1
+	}
+	for i := 0; i < totalTasks; i += 1 {
+		if status[i] == 1 {
+			fmt.Printf("[%d/%d] %s passed\n", i+1, totalTasks, projects[i])
+		} else {
+			fmt.Printf("[%d/%d] %s failed\n", i+1, totalTasks, projects[i])
+		}
+	}
 	fmt.Printf("Total time: %s\n", time.Since(startTime))
 }
