@@ -102,8 +102,7 @@ func SToInt64(s string) int64 {
 
 func CurTimestampMs() int64 {
 	currentTime := time.Now()
-	unixTimestamp := currentTime.Unix()
-	return unixTimestamp * 1000
+	return currentTime.UnixNano() / int64(time.Millisecond)
 }
 
 // Skip whitespace lines
