@@ -1,3 +1,7 @@
 *.log
+/log
 /test
 /.idea
+/2x
+/2x_100
+/sta

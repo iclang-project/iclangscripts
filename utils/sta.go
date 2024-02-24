@@ -1,7 +1,8 @@
-package main
+package utils
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Sta struct {
@@ -30,7 +32,7 @@ type Sta struct {
 	FuncVLoc      int64 `json:"funcVLoc"`
 }
 
-func (sta *Sta) toString() string {
+func (sta *Sta) ToString() string {
 	res := ""
 	res += fmt.Sprintf("[FileNum] %d\n", sta.FileNum)
 	res += fmt.Sprintf("[CompileTimeMs] %d\n", sta.CompileTimeMs)
@@ -50,7 +52,7 @@ func (sta *Sta) toString() string {
 	return res
 }
 
-func (sta *Sta) add(another *Sta) {
+func (sta *Sta) Add(another *Sta) {
 	sta.FileNum += another.FileNum
 	sta.CompileTimeMs += another.CompileTimeMs
 	sta.FrontTimeMs += another.FrontTimeMs
@@ -68,6 +70,17 @@ func (sta *Sta) add(another *Sta) {
 	sta.FuncVLoc += another.FuncVLoc
 }
 
+type CommitSta struct {
+	CommitId string `json:"commitId"`
+	Statistic *Sta `json:"sta"`
+	BuildTimeMs int64 `json:"buildTimeMs"`
+}
+
+func (commitSta *CommitSta) Add(another *CommitSta) {
+	commitSta.Statistic.Add(another.Statistic)
+	commitSta.BuildTimeMs += another.BuildTimeMs
+}
+
 type CompileTxt struct {
 	OriginalCommand string
 	PPCommand       string
@@ -79,10 +92,7 @@ type CompileTxt struct {
 	EndTimestampMs  int64
 }
 
-var baseTimestampMs int64
-var stas map[string]*Sta
-
-func sToInt64(s string) int64 {
+func SToInt64(s string) int64 {
 	res, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		log.Fatalf("Cannot convert %s to int64!\n", s)
@@ -90,8 +100,15 @@ func sToInt64(s string) int64 {
 	return res
 }
 
-func readCompileTxt(compileTxtPath string) *CompileTxt {
-	file, err := os.Open(compileTxtPath)
+func CurTimestampMs() int64 {
+	currentTime := time.Now()
+	unixTimestamp := currentTime.Unix()
+	return unixTimestamp * 1000
+}
+
+// Skip whitespace lines
+func ReadFileToLines(filePath string) []string {
+	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalln("Failed to open the file:", err)
 	}
@@ -99,16 +116,24 @@ func readCompileTxt(compileTxtPath string) *CompileTxt {
 
 	lines := make([]string, 0)
 	scanner := bufio.NewScanner(file)
-	const maxCapacity = 1024*1024  
-        buf := make([]byte, maxCapacity)
-        scanner.Buffer(buf, maxCapacity)
+	const maxCapacity = 1024 * 1024
+	buf := make([]byte, maxCapacity)
+	scanner.Buffer(buf, maxCapacity)
 	for scanner.Scan() {
 		line := scanner.Text()
-		lines = append(lines, line)
+		if !(strings.TrimSpace(line) == "") {
+			lines = append(lines, line)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalln("Error scanning file:", err)
 	}
+
+	return lines
+}
+
+func readCompileTxt(compileTxtPath string) *CompileTxt {
+	lines := ReadFileToLines(compileTxtPath)
 
 	return &CompileTxt{
 		OriginalCommand: lines[0],
@@ -116,9 +141,9 @@ func readCompileTxt(compileTxtPath string) *CompileTxt {
 		CompileCommand:  lines[2],
 		InputAbsPath:    lines[3],
 		OutputAbsPath:   lines[4],
-		FrontTimeMs:     sToInt64(lines[5]),
-		TotalTimeMs:     sToInt64(lines[6]),
-		EndTimestampMs:  sToInt64(lines[7]),
+		FrontTimeMs:     SToInt64(lines[5]),
+		TotalTimeMs:     SToInt64(lines[6]),
+		EndTimestampMs:  SToInt64(lines[7]),
 	}
 }
 
@@ -139,32 +164,7 @@ func findPPFilePath(dirPath string) string {
 }
 
 func countLoc(srcPath string) int64 {
-	file, err := os.Open(srcPath)
-	if err != nil {
-		log.Fatalln("Failed to open the file:", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-        const maxCapacity = 1024*1024
-        buf := make([]byte, maxCapacity)
-        scanner.Buffer(buf, maxCapacity)
-
-	var nonEmptyLinesCount int64
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if !(strings.TrimSpace(line) == "") {
-			nonEmptyLinesCount++
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatalln("Error scanning file:", err)
-	}
-
-	return nonEmptyLinesCount
+	return (int64)(len(ReadFileToLines(srcPath)))
 }
 
 func countDirSizeB(dirPath string) int64 {
@@ -184,7 +184,7 @@ func countDirSizeB(dirPath string) int64 {
 	return res
 }
 
-func visit(dirPath string) error {
+func visit(dirPath string, baseTimestampMs int64, stas map[string]*Sta) error {
 	if strings.HasSuffix(dirPath, ".iclang") {
 		compileTxtPath := path.Join(dirPath, "compile.txt")
 		compileTxt := readCompileTxt(compileTxtPath)
@@ -222,7 +222,7 @@ func visit(dirPath string) error {
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			fullPath := filepath.Join(dirPath, fileInfo.Name())
-			if err := visit(fullPath); err != nil {
+			if err := visit(fullPath, baseTimestampMs, stas); err != nil {
 				return err
 			}
 		}
@@ -231,30 +231,40 @@ func visit(dirPath string) error {
 	return nil
 }
 
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run sta.go <dir> <base-timestamp-ms>")
-		os.Exit(1)
-	}
-	dir := os.Args[1]
-	baseTimestampMs = sToInt64(os.Args[2])
+func CalSta(dir string, baseTimestampMs int64) *Sta {
+	stas := make(map[string]*Sta, 0)
 
-	stas = make(map[string]*Sta, 0)
-
-	err := visit(dir)
+	err := visit(dir, baseTimestampMs, stas)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//for k, v := range stas {
-	//	fmt.Println(k, "==========")
-	//	fmt.Println(v.toString())
-	//}
-
 	staSum := &Sta{}
 	for _, v := range stas {
-		staSum.add(v)
+		staSum.Add(v)
 	}
 
-	fmt.Print(staSum.toString())
+	return staSum
+}
+
+func CalCommitSta(dir string, baseTimestampMs int64, commitId string, buildTimeMs int64) *CommitSta {
+	return &CommitSta{
+		CommitId:  commitId,
+		Statistic: CalSta(dir, baseTimestampMs),
+		BuildTimeMs: buildTimeMs,
+	}
+}
+
+func SaveCommitsStaToFile(commitsSta []*CommitSta, filePath string) {
+	file, err := os.Create(filePath)
+	if err != nil {
+		log.Fatalln("Can not open file:", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+
+	if err := encoder.Encode(commitsSta); err != nil {
+		log.Fatalln("Can not encode JSON:", err)
+	}
 }

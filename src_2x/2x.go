@@ -14,8 +14,8 @@ import (
 var projects = [6]string{"llvm", "cvc5", "z3", "sqlite", "cpython", "postgres"}
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run 2x.go <benchmarkdir> <scriptname>\nNote: Do not provide '.sh' in <scriptname>")
+	if len(os.Args) != 4 {
+		fmt.Println("Usage: 2x <benchmarkdir> <scriptname> <logdir>\nNote: Do not provide '.sh' in <scriptname>")
 		os.Exit(1)
 	}
 	benchmarkDir := os.Args[1]
@@ -30,6 +30,15 @@ func main() {
 	if strings.HasSuffix(scriptName, ".sh") {
 		fmt.Println("Do not provide '.sh' in <scriptname>")
 		os.Exit(1)
+	}
+	logDir, err := filepath.Abs(os.Args[3])
+	if err != nil {
+		log.Fatalf("Can not convert %s to abs path\n", os.Args[3])
+	}
+	_ = os.Mkdir(logDir, 0777)
+	for _, project := range projects {
+		projectLogDir := filepath.Join(logDir, project)
+		_ = os.Mkdir(projectLogDir, 0777)
 	}
 
 	var wg sync.WaitGroup
@@ -48,17 +57,20 @@ func main() {
 				wg.Done()
 			}()
 
-			project := filepath.Join(benchmarkDir, projects[id])
-			fmt.Printf("[%d/%d] Running %s in %s ...\n", id+1, totalTasks, scriptName, project)
+			projectName := projects[id]
+			projectPath := filepath.Join(benchmarkDir, projectName)
+			projectLogPath := filepath.Join(logDir, projectName, scriptName + ".log")
 
-			logName := "2x_" + scriptName + ".log"
-			cmdStr := "cd " + project + " && rm -f " + logName +
-				" && ./" + scriptName + ".sh > " + logName + " 2>&1"
+			fmt.Printf("[%d/%d] Running %s in %s ...\n",
+				id+1, totalTasks, scriptName, projectPath)
+
+			cmdStr := "cd " + projectPath + " && rm -f " + projectLogPath +
+				" && ./" + scriptName + ".sh > " + projectLogPath + " 2>&1"
 			cmd := exec.Command("/bin/bash", "-c", cmdStr)
 
 			_, err := cmd.CombinedOutput()
 			if err != nil {
-				fmt.Printf("Task %d error, see %s/%s for more details.\n", id+1, project, logName)
+				fmt.Printf("Task %d error, see %s for more details.\n", id+1, projectLogPath)
 			} else {
 				fmt.Printf("Task %d done\n", id+1)
 			}

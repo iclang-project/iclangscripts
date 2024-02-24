@@ -1,10 +1,16 @@
 # iclangscripts
 Useful scripts for IClang.
 
-(1) sta.go
+Build:
 
 ```shell
-go run sta.go <dir> <base-timestamp-ms>
+./build.sh
+```
+
+(1) sta
+
+```shell
+sta <dir> <base-timestamp-ms>
 ```
 
 Recursively traverse all *.iclang under `dir`, collect the following data:
@@ -24,7 +30,7 @@ FuncXLoc
 FuncZNum      
 FuncZLoc      
 FuncVNum      
-FuncVLoc      
+FuncVLoc
 ```
 
 Note that we only consider the iclang dir whose `endTimestampMs` >= `<base-timestamp-ms>`.
@@ -74,10 +80,10 @@ We will leverage the result of  `collect100_cmp.sh` to check the result of`colle
 
 Just change each `commitId yes|no|error [time(s)]` to `commitId yes|no|error`.
 
-(5) 2x.go
+(5) 2x
 
 ```shell
-go run 2x.go <benchmarkdir> <scriptname>
+2x <benchmarkdir> <scriptname> <logdir>
 # Note: Do not provide '.sh' in <scriptname>
 ```
 
@@ -92,4 +98,24 @@ Run `<scriptname>`.sh through a coroutine pool of size 2 in:
 <benchmarkdir>/postgres
 ```
 
-Take llvm as an example, you can use `tail -f <benchmarkdir>/llvm 2x_<scriptname>.log` to see the log.
+Take llvm as an example, you can use `tail -f <logdir>/llvm/<scriptname>.log` to see the log.
+
+(6) 2x_100
+
+```shell
+2x_100 <benchmarkdir> <logdir>
+```
+
+Run 100 commits through a coroutine pool of size 2 in:
+
+```shell
+<benchmarkdir>/llvm
+<benchmarkdir>/cvc5
+<benchmarkdir>/z3
+<benchmarkdir>/sqlite
+<benchmarkdir>/cpython
+<benchmarkdir>/postgres
+```
+
+Take llvm as an example, you can use `tail -f <logdir>/llvm/100commits.log` to see the log, 
+and you can use `cat <logdir>/llvm/100commits.json` to see the json result.
