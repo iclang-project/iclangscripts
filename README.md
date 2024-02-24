@@ -1,14 +1,33 @@
 # iclangscripts
 Useful scripts for IClang.
 
-(1) front_back_time.cpp
+(1) sta.go
 
 ```shell
-g++ front_back_time.cpp -o front_back_time
-./front_back_time <dir>
+go run sta.go <dir> <base-timestamp-ms>
 ```
 
-Recursively traverse all *.iclang/compile.txt under `dir`, calculate the total front-end time and the total back-end time.
+Recursively traverse all *.iclang under `dir`, collect the following data:
+
+```shell
+FileNum       
+CompileTimeMs 
+FrontTimeMs   
+BackTimeMs    
+FileSizeB     
+SrcLoc        
+PPLoc         
+FuncNum       
+FuncLoc       
+FuncXNum      
+FuncXLoc      
+FuncZNum      
+FuncZLoc      
+FuncVNum      
+FuncVLoc      
+```
+
+Note that we only consider the iclang dir whose `endTimestampMs` >= `<base-timestamp-ms>`.
 
 (2) collect100.sh / collect100_fossil.sh
 
@@ -54,3 +73,23 @@ We will leverage the result of  `collect100_cmp.sh` to check the result of`colle
 ```
 
 Just change each `commitId yes|no|error [time(s)]` to `commitId yes|no|error`.
+
+(5) 2x.go
+
+```shell
+go run 2x.go <benchmarkdir> <scriptname>
+# Note: Do not provide '.sh' in <scriptname>
+```
+
+Run `<scriptname>`.sh through a coroutine pool of size 2 in:
+
+```shell
+<benchmarkdir>/llvm
+<benchmarkdir>/cvc5
+<benchmarkdir>/z3
+<benchmarkdir>/sqlite
+<benchmarkdir>/cpython
+<benchmarkdir>/postgres
+```
+
+Take llvm as an example, you can use `tail -f <benchmarkdir>/llvm 2x_<scriptname>.log` to see the log.
