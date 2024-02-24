@@ -256,15 +256,13 @@ func CalCommitSta(dir string, baseTimestampMs int64, commitId string, buildTimeM
 }
 
 func SaveCommitsStaToFile(commitsSta []*CommitSta, filePath string) {
-	file, err := os.Create(filePath)
+	jsonBytes, err := json.MarshalIndent(commitsSta, "", "    ")
 	if err != nil {
-		log.Fatalln("Can not open file:", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-
-	if err := encoder.Encode(commitsSta); err != nil {
 		log.Fatalln("Can not encode JSON:", err)
+	}
+
+	err = os.WriteFile(filePath, jsonBytes, 0644)
+	if err != nil {
+		log.Fatalln("Can not save json:", err)
 	}
 }
