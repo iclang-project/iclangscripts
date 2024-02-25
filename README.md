@@ -83,8 +83,9 @@ Just change each `commitId yes|no|error [time(s)]` to `commitId yes|no|error`.
 (5) 2x
 
 ```shell
-2x <benchmarkdir> <scriptname> <logdir>
-# Note: Do not provide '.sh' in <scriptname>
+2x <benchmarkdir> <projects> <scriptname> <logdir>
+# Note: (1) <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython
+#       (2) Do not provide '.sh' in <scriptname>
 ```
 
 Run `<scriptname>`.sh through a coroutine pool of size 2 in:
@@ -103,7 +104,7 @@ Take llvm as an example, you can use `tail -f <logdir>/llvm/<scriptname>.log` to
 (6) 2x_100
 
 ```shell
-2x_100 <benchmarkdir> <logdir>
+2x_100 <benchmarkdir> <projects> <logdir>
 ```
 
 Run 100 commits through a coroutine pool of size 2 in:

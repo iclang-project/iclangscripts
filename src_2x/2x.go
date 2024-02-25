@@ -11,14 +11,23 @@ import (
 	"time"
 )
 
-var projects = [6]string{"llvm", "cpython", "postgres", "sqlite", "cvc5", "z3"}
-
 func main() {
-	if len(os.Args) != 4 {
-		fmt.Println("Usage: 2x <benchmarkdir> <scriptname> <logdir>\nNote: Do not provide '.sh' in <scriptname>")
+	if len(os.Args) != 5 {
+		fmt.Println("Usage: 2x <benchmarkdir> <projects> <scriptname> <logdir>")
+		fmt.Println("Note: (1) <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
+		fmt.Println("      (2) Do not provide '.sh' in <scriptname>")
 		os.Exit(1)
 	}
 	benchmarkDir := os.Args[1]
+
+	var projects []string
+	projectsStr := os.Args[2]
+	if projectsStr == "all" {
+		projects = []string{"llvm", "cpython", "postgres", "sqlite", "cvc5", "z3"}
+	} else {
+		projects = strings.Split(projectsStr, ":")
+	}
+
 	for _, project := range projects {
 		projectPath := filepath.Join(benchmarkDir, project)
 		_, err := os.Stat(projectPath)
@@ -26,12 +35,13 @@ func main() {
 			log.Fatalln(projectPath + " does not exist")
 		}
 	}
-	scriptName := os.Args[2]
+
+	scriptName := os.Args[3]
 	if strings.HasSuffix(scriptName, ".sh") {
 		fmt.Println("Do not provide '.sh' in <scriptname>")
 		os.Exit(1)
 	}
-	logDir, err := filepath.Abs(os.Args[3])
+	logDir, err := filepath.Abs(os.Args[4])
 	if err != nil {
 		log.Fatalf("Can not convert %s to abs path\n", os.Args[3])
 	}

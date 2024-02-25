@@ -12,19 +12,27 @@ import (
 	"time"
 )
 
-var projects = [6]string{"llvm", "cpython", "postgres", "sqlite", "cvc5", "z3"}
-
 func split2(line string) (string, string) {
 	s2 := strings.SplitN(line, " ", 2)
 	return s2[0], s2[1]
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: 2x_100 <benchmarkdir> <logdir>")
+	if len(os.Args) != 4 {
+		fmt.Println("Usage: 2x_100 <benchmarkdir> <projects> <logdir>")
+		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
 		os.Exit(1)
 	}
 	benchmarkDir := os.Args[1]
+
+	var projects []string
+	projectsStr := os.Args[2]
+	if projectsStr == "all" {
+		projects = []string{"llvm", "cpython", "postgres", "sqlite", "cvc5", "z3"}
+	} else {
+		projects = strings.Split(projectsStr, ":")
+	}
+
 	for _, project := range projects {
 		projectPath := filepath.Join(benchmarkDir, project)
 		_, err := os.Stat(projectPath)
@@ -32,7 +40,8 @@ func main() {
 			log.Fatalln(projectPath + " does not exist")
 		}
 	}
-	logDir, err := filepath.Abs(os.Args[2])
+
+	logDir, err := filepath.Abs(os.Args[3])
 	if err != nil {
 		log.Fatalf("Can not convert %s to abs path\n", os.Args[2])
 	}
