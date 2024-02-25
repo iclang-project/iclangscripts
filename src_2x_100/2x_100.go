@@ -72,6 +72,8 @@ func main() {
 			projectPath := filepath.Join(benchmarkDir, projectName)
 			projectSrcPath := filepath.Join(projectPath, "src")
 			project100CommitsPath := filepath.Join(projectPath, "100commits.txt")
+			projectCommitsMBRPath := filepath.Join(projectPath, "commitsmbr.txt")
+			// These commits must be rebuild, otherwise the test suit will fail (even if we do not use iclang)
 			projectLogPath := filepath.Join(logDir, projectName, "100commits.log")
 			projectStaJsonPath := filepath.Join(logDir, projectName, "100commits.json")
 			gitStr := "git"
@@ -99,6 +101,11 @@ func main() {
 			// Read 100 commits
 			// format: new -> old: commitId yes|no|error
 			lines := utils.ReadFileToLines(project100CommitsPath)
+			mbrCommits := make(map[string]bool, 0)
+			tempLines := utils.ReadFileToLines(projectCommitsMBRPath)
+			for _, tempLine := range tempLines {
+				mbrCommits[tempLine] = true
+			}
 
 			// Checkout to the HEAD^ of the first commit
 			firstCommitId, _ := split2(lines[len(lines)-1])
@@ -162,6 +169,17 @@ func main() {
 				if err != nil {
 					fmt.Printf("Task %d git checkout error, see %s for more details.\n", id+1, projectLogPath)
 					return
+				}
+
+				if _, ok := mbrCommits[commitId]; ok {
+					// Must be rebuild
+					cleanBuildCmdStr :=  "cd " + projectPath + " && ./cleanbuild.sh >> " + projectLogPath + " 2>&1"
+					cleanBuildCmd := exec.Command("/bin/bash", "-c", cleanBuildCmdStr)
+					_, err = cleanBuildCmd.CombinedOutput()
+					if err != nil {
+						fmt.Printf("Task %d clean build error, see %s for more details.\n", id+1, projectLogPath)
+						return
+					}
 				}
 
 				// Inc build
