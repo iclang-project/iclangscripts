@@ -69,7 +69,7 @@ func main() {
 			gitPrevStr := "git checkout HEAD^"
 			if projectName == "sqlite" {
 				gitStr = "fossil"
-				gitPrevStr = "fossil update prev"
+				gitPrevStr = "fossil checkout prev"
 			}
 
 			fmt.Printf("[%d/%d] Running 100commits in %s ...\n",

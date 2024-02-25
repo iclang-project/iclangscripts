@@ -36,7 +36,7 @@ while true; do
     curNum=$[$curNum+1]
     find . -type f -name "diff.txt" -path "*.iclang/*" | xargs -I {} rm "{}"
     cd src
-    fossil update prev
+    fossil checkout prev
     commitId=$(fossil info | awk '/checkout:/ {print $2}')
     cd ..
     set +e
