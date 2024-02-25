@@ -33,7 +33,12 @@ FuncVNum
 FuncVLoc
 ```
 
-Note that we only consider the iclang dir whose `endTimestampMs` >= `<base-timestamp-ms>`.
+When `<base-timestamp-ms>` > 0, we only consider iclang dirs that meet the following conditions:
+
+* `diff.txt` exists.
+* `endTimestampMs` >= `<base-timestamp-ms>`.
+
+Otherwise, we will count all .iclang dirs.
 
 (2) collect100.sh / collect100_fossil.sh
 

@@ -131,6 +131,14 @@ func ReadFileToLines(filePath string) []string {
 	return lines
 }
 
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func readCompileTxt(compileTxtPath string) *CompileTxt {
 	lines := ReadFileToLines(compileTxtPath)
 
@@ -188,8 +196,11 @@ func visit(dirPath string, baseTimestampMs int64, stas map[string]*Sta) error {
 		compileTxtPath := path.Join(dirPath, "compile.txt")
 		compileTxt := readCompileTxt(compileTxtPath)
 
-		if compileTxt.EndTimestampMs < baseTimestampMs {
-			return nil
+		if baseTimestampMs > 0 {
+			diffTxtPath := path.Join(dirPath, "diff.txt")
+			if !fileExists(diffTxtPath) || compileTxt.EndTimestampMs < baseTimestampMs {
+				return nil
+			}
 		}
 
 		stas[dirPath] = &Sta{
