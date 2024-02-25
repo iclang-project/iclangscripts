@@ -16,6 +16,11 @@ import (
 
 var projects = [6]string{"llvm", "cvc5", "z3", "sqlite", "cpython", "postgres"}
 
+func split2(line string) (string, string) {
+	s2 := strings.SplitN(line, " ", 2)
+	return s2[0], s2[1]
+}
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: 2x_100 <benchmarkdir> <logdir>")
@@ -63,22 +68,41 @@ func main() {
 			projectLogPath := filepath.Join(logDir, projectName, "100commits.log")
 			projectStaJsonPath := filepath.Join(logDir, projectName, "100commits.json")
 			gitStr := "git"
+			gitPrevStr := "git checkout HEAD^"
 			if projectName == "sqlite" {
 				gitStr = "fossil"
+				gitPrevStr = "fossil update prev"
 			}
 
 			fmt.Printf("[%d/%d] Running 100commits in %s ...\n",
 				id+1, totalTasks, projectPath)
 
+			// Read 100 commits
+			// format: new -> old: commitId yes|no|error
+			lines := utils.ReadFileToLines(project100CommitsPath)
+
+			// Checkout to the HEAD^ of the first commit
+			firstCommitId, _ := split2(lines[len(lines)-1])
+			fmt.Printf("Task %d checkout to the HEAD^ of %s\n", id+1, firstCommitId)
+			firstCheckoutCmdStr :=  "rm -f " + projectLogPath + " && rm -f " + projectStaJsonPath +
+				" && cd " + projectSrcPath +
+				" && " + gitStr + " checkout " + firstCommitId + " > " + projectLogPath + " 2>&1" +
+				" && " + gitPrevStr + " >> " + projectLogPath + " 2>&1"
+			firstCheckoutCmd := exec.Command("/bin/bash", "-c", firstCheckoutCmdStr)
+			_, err := firstCheckoutCmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Task %d checkout to the HEAD^ of the first commit error, see %s for more details.\n",
+					id+1, projectLogPath)
+				return
+			}
+
 			// Init and config
 			fmt.Printf("Task %d init and config\n", id+1)
 			initCmdStr :=  "cd " + projectPath +
-				" && rm -f " + projectLogPath +
-				" && rm -f " + projectStaJsonPath +
-				" && ./init.sh > " + projectLogPath + " 2>&1" +
+				" && ./init.sh >> " + projectLogPath + " 2>&1" +
 				" && ./config.sh >> " + projectLogPath + " 2>&1"
 			initCmd := exec.Command("/bin/bash", "-c", initCmdStr)
-			_, err := initCmd.CombinedOutput()
+			_, err = initCmd.CombinedOutput()
 			if err != nil {
 				fmt.Printf("Task %d init error, see %s for more details.\n", id+1, projectLogPath)
 				return
@@ -102,15 +126,11 @@ func main() {
 			commitsSta := make([]*utils.CommitSta, 0)
 			commitsSta = append(commitsSta, fullBuildSta)
 
-			// 100
-			// format: new -> old: commitId yes|no|error
-			lines := utils.ReadFileToLines(project100CommitsPath)
+			// Inc build 100 commits
 			commitNum := 0
-			for _, line := range lines {
+			for j := len(lines)-1; j >= 0; j -= 1 {
 				// read commitId and flag
-				s2 := strings.SplitN(line, " ", 2)
-				commitId := s2[0]
-				flag := s2[1]
+				commitId, flag := split2(lines[j])
 				if flag != "yes" {
 					continue
 				}
