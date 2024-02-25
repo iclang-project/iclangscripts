@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// todo commits print id
-
 var projects = [6]string{"llvm", "cvc5", "z3", "sqlite", "cpython", "postgres"}
 
 func split2(line string) (string, string) {
@@ -77,6 +75,18 @@ func main() {
 			fmt.Printf("[%d/%d] Running 100commits in %s ...\n",
 				id+1, totalTasks, projectPath)
 
+			// Init
+			fmt.Printf("Task %d init\n", id+1)
+			initCmdStr :=  "rm -f " + projectLogPath + " && rm -f " + projectStaJsonPath +
+				" && cd " + projectPath +
+				" && ./init.sh > " + projectLogPath + " 2>&1"
+			initCmd := exec.Command("/bin/bash", "-c", initCmdStr)
+			_, err := initCmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Task %d init error, see %s for more details.\n", id+1, projectLogPath)
+				return
+			}
+
 			// Read 100 commits
 			// format: new -> old: commitId yes|no|error
 			lines := utils.ReadFileToLines(project100CommitsPath)
@@ -84,27 +94,25 @@ func main() {
 			// Checkout to the HEAD^ of the first commit
 			firstCommitId, _ := split2(lines[len(lines)-1])
 			fmt.Printf("Task %d checkout to the HEAD^ of %s\n", id+1, firstCommitId)
-			firstCheckoutCmdStr :=  "rm -f " + projectLogPath + " && rm -f " + projectStaJsonPath +
-				" && cd " + projectSrcPath +
+			firstCheckoutCmdStr :=  "cd " + projectSrcPath +
 				" && " + gitStr + " checkout " + firstCommitId + " > " + projectLogPath + " 2>&1" +
 				" && " + gitPrevStr + " >> " + projectLogPath + " 2>&1"
 			firstCheckoutCmd := exec.Command("/bin/bash", "-c", firstCheckoutCmdStr)
-			_, err := firstCheckoutCmd.CombinedOutput()
+			_, err = firstCheckoutCmd.CombinedOutput()
 			if err != nil {
 				fmt.Printf("Task %d checkout to the HEAD^ of the first commit error, see %s for more details.\n",
 					id+1, projectLogPath)
 				return
 			}
 
-			// Init and config
-			fmt.Printf("Task %d init and config\n", id+1)
-			initCmdStr :=  "cd " + projectPath +
-				" && ./init.sh >> " + projectLogPath + " 2>&1" +
+			// config
+			fmt.Printf("Task %d config\n", id+1)
+			configCmdStr :=  "cd " + projectPath +
 				" && ./config.sh >> " + projectLogPath + " 2>&1"
-			initCmd := exec.Command("/bin/bash", "-c", initCmdStr)
-			_, err = initCmd.CombinedOutput()
+			configCmd := exec.Command("/bin/bash", "-c", configCmdStr)
+			_, err = configCmd.CombinedOutput()
 			if err != nil {
-				fmt.Printf("Task %d init error, see %s for more details.\n", id+1, projectLogPath)
+				fmt.Printf("Task %d config error, see %s for more details.\n", id+1, projectLogPath)
 				return
 			}
 
