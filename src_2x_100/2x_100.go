@@ -198,12 +198,20 @@ func main() {
 			// Save final json
 			utils.SaveCommitsStaToFile(commitsSta, projectStaJsonPath)
 
-			// Test
+			// Test (max try: 3)
 			fmt.Printf("Task %d test\n", id+1)
-			testCmdStr :=  "cd " + projectPath + " && ./test.sh >> " + projectLogPath + " 2>&1"
-			testCmd := exec.Command("/bin/bash", "-c", testCmdStr)
-			_, err = testCmd.CombinedOutput()
-			if err != nil {
+			testFlag := false
+			for j := 0; j < 3; j += 1 {
+				testCmdStr :=  "cd " + projectPath + " && ./test.sh >> " + projectLogPath + " 2>&1"
+				testCmd := exec.Command("/bin/bash", "-c", testCmdStr)
+				_, err = testCmd.CombinedOutput()
+				if err == nil {
+					testFlag = true
+					break
+				}
+				fmt.Printf("Task %d test error, try again: %d (max: 3)\n", id+1, j)
+			}
+			if !testFlag {
 				fmt.Printf("Task %d test error, see %s for more details.\n", id+1, projectLogPath)
 				return
 			}
