@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var projects = [6]string{"llvm", "cvc5", "z3", "sqlite", "cpython", "postgres"}
+var projects = [6]string{"llvm", "cpython", "postgres", "sqlite", "cvc5", "z3"}
 
 func split2(line string) (string, string) {
 	s2 := strings.SplitN(line, " ", 2)
