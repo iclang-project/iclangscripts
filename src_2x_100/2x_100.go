@@ -138,7 +138,7 @@ func main() {
 			preTimestampMs := curTimestampMs
 			curTimestampMs = utils.CurTimestampMs()
 			// First full build sta, regard as a special commit
-			fullBuildSta := utils.CalCommitSta(projectPath, preTimestampMs, "firstFull", curTimestampMs - preTimestampMs)
+			fullBuildSta := utils.CalCommitSta(projectPath, 0, "firstFull", curTimestampMs - preTimestampMs)
 
 			commitsSta := make([]*utils.CommitSta, 0)
 			commitsSta = append(commitsSta, fullBuildSta)
