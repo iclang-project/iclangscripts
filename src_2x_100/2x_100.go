@@ -193,6 +193,9 @@ func main() {
 			for j := 1; j < len(commitsSta); j += 1 {
 				commitStaSum.Add(commitsSta[j])
 			}
+			// Just to count space
+			finalSpaceSta := utils.CalSta(projectPath, 0)
+			commitStaSum.Statistic.FileSizeB = finalSpaceSta.FileSizeB
 			commitsSta = append(commitsSta, commitStaSum)
 
 			// Save final json

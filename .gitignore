@@ -1,5 +1,7 @@
 *.log
 /log
+/clanglog
+/iclanglog
 /test
 /.idea
 /2x
