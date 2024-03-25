@@ -127,7 +127,7 @@ func main() {
 
 			// First full build
 			fmt.Printf("Task %d first full build\n", id+1)
-			curTimestampMs := utils.CurTimestampMs()
+			curTimestampMs := utils.CurrentTsMs()
 			fullBuildCmdStr :=  "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
 			fullBuildCmd := exec.Command("/bin/bash", "-c", fullBuildCmdStr)
 			_, err = fullBuildCmd.CombinedOutput()
@@ -136,11 +136,11 @@ func main() {
 				return
 			}
 			preTimestampMs := curTimestampMs
-			curTimestampMs = utils.CurTimestampMs()
+			curTimestampMs = utils.CurrentTsMs()
 			// First full build sta, regard as a special commit
-			fullBuildSta := utils.CalCommitSta(projectPath, 0, "firstFull", curTimestampMs - preTimestampMs)
+			fullBuildSta := utils.NewCommitStaX(projectPath, 0, "firstFull", curTimestampMs - preTimestampMs)
 
-			commitsSta := make([]*utils.CommitSta, 0)
+			commitsSta := utils.NewCommitsSta()
 			commitsSta = append(commitsSta, fullBuildSta)
 
 			// Inc build 100 commits
@@ -165,7 +165,7 @@ func main() {
 				}
 
 				// Inc build
-				curTimestampMs = utils.CurTimestampMs()
+				curTimestampMs = utils.CurrentTsMs()
 				incBuildCmdStr :=  "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
 				incBuildCmd := exec.Command("/bin/bash", "-c", incBuildCmdStr)
 				_, err = incBuildCmd.CombinedOutput()
@@ -174,9 +174,9 @@ func main() {
 					return
 				}
 				preTimestampMs = curTimestampMs
-				curTimestampMs = utils.CurTimestampMs()
+				curTimestampMs = utils.CurrentTsMs()
 				// Inc full build sta
-				incBuildSta := utils.CalCommitSta(projectPath, preTimestampMs, commitId, curTimestampMs - preTimestampMs)
+				incBuildSta := utils.NewCommitStaX(projectPath, preTimestampMs, commitId, curTimestampMs - preTimestampMs)
 				commitsSta = append(commitsSta, incBuildSta)
 
 				// Save temp json (convenient for intermediate debugging)
@@ -184,18 +184,16 @@ func main() {
 			}
 
 			// Sum 100
-			commitStaSum := &utils.CommitSta{
-				CommitId: "sum",
-				Statistic: &utils.Sta{},
-				BuildTimeMs: 0,
-			}
+			commitStaSum := utils.NewCommitSta()
+			commitStaSum.CommitId = "sum"
+
 			// Skip first full
 			for j := 1; j < len(commitsSta); j += 1 {
 				commitStaSum.Add(commitsSta[j])
 			}
 			// Just to count space
-			finalSpaceSta := utils.CalSta(projectPath, 0)
-			commitStaSum.Statistic.FileSizeB = finalSpaceSta.FileSizeB
+			finalSpaceSta := utils.CalIClangDirStat(projectPath, 0)
+			commitStaSum.IClangDirStaF.FileSizeB = finalSpaceSta.FileSizeB
 			commitsSta = append(commitsSta, commitStaSum)
 
 			// Save final json

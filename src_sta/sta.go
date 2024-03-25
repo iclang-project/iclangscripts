@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"iclangscripts/utils"
+	"log"
 	"os"
 )
 
@@ -14,5 +16,9 @@ func main() {
 	dir := os.Args[1]
 	baseTimestampMs := utils.SToInt64(os.Args[2])
 
-	fmt.Print(utils.CalSta(dir, baseTimestampMs).ToString())
+	jsonBytes, err := json.MarshalIndent(utils.CalIClangDirStat(dir, baseTimestampMs), "", "    ")
+	if err != nil {
+		log.Fatalln("Can not encode JSON:", err)
+	}
+	fmt.Println(string(jsonBytes))
 }
