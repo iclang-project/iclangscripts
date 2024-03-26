@@ -204,9 +204,7 @@ func ReadFileToLines(filePath string) []string {
 	if err != nil {
 		log.Fatalln("Failed to open the file:", err)
 	}
-	defer func () {
-		_ = file.Close()
-	} ()
+	defer file.Close()
 
 	lines := make([]string, 0)
 	scanner := bufio.NewScanner(file)

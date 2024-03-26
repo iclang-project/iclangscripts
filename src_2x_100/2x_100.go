@@ -139,6 +139,7 @@ func main() {
 			curTimestampMs = utils.CurrentTsMs()
 			// First full build sta, regard as a special commit
 			fullBuildSta := utils.NewCommitStaX(projectPath, 0, "firstFull", curTimestampMs - preTimestampMs)
+			utils.DumpFds();
 
 			commitsSta := utils.NewCommitsSta()
 			commitsSta = append(commitsSta, fullBuildSta)
@@ -177,6 +178,7 @@ func main() {
 				curTimestampMs = utils.CurrentTsMs()
 				// Inc full build sta
 				incBuildSta := utils.NewCommitStaX(projectPath, preTimestampMs, commitId, curTimestampMs - preTimestampMs)
+				utils.DumpFds();
 				commitsSta = append(commitsSta, incBuildSta)
 
 				// Save temp json (convenient for intermediate debugging)
