@@ -202,7 +202,7 @@ func countDirSizeB(dirPath string) int64 {
 func ReadFileToLines(filePath string) []string {
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Fatalln("Failed to open the file:", err)
+		return []string{}
 	}
 	defer file.Close()
 
@@ -218,7 +218,7 @@ func ReadFileToLines(filePath string) []string {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalln("Error scanning file:", err)
+		return []string{}
 	}
 
 	return lines
