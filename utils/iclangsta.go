@@ -269,16 +269,20 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 	return res
 }
 
-func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, dirPath string, baseTsMs int64) {
+func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, lim chan int, dirPath string, baseTsMs int64) {
 	if strings.HasSuffix(dirPath, ".iclang") {
 		wg.Add(1)
-		go func(_wg *sync.WaitGroup, _ch chan *IClangDirStat, _dirPath string, _baseTsMs int64) {
-			defer wg.Done()
+		lim <- 1
+		go func(_wg *sync.WaitGroup, _ch chan *IClangDirStat, _lim chan int, _dirPath string, _baseTsMs int64) {
+			defer func() {
+				<- _lim
+				wg.Done()
+			} ()
 			iClangDirStat := readIClangDirStat(_dirPath, _baseTsMs)
 			if iClangDirStat != nil {
 				_ch <- iClangDirStat
 			}
-		} (wg, ch, dirPath, baseTsMs)
+		} (wg, ch, lim, dirPath, baseTsMs)
 	}
 
 	files, err := ioutil.ReadDir(dirPath)
@@ -289,14 +293,15 @@ func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, dirPath string, baseTsMs 
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			fullPath := filepath.Join(dirPath, fileInfo.Name())
-			visit(wg, ch, fullPath, baseTsMs)
+			visit(wg, ch, lim, fullPath, baseTsMs)
 		}
 	}
 }
 
 func visitProducer(ch chan *IClangDirStat, dirPath string, baseTsMs int64) {
 	var wg sync.WaitGroup
-	visit(&wg, ch, dirPath, baseTsMs)
+	lim := make(chan int, 32)
+	visit(&wg, ch, lim, dirPath, baseTsMs)
 	wg.Wait()
 	close(ch)
 }
