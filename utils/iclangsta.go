@@ -88,6 +88,7 @@ type CompStat struct {
 	CompileCommand  string   `json:"compileCommand"`
 	InputAbsPath    string   `json:"inputAbsPath"`
 	OutputAbsPath   string   `json:"outputAbsPath"`
+	CurrentPath   string   `json:"currentPath"`
 	StartTsMs       int64    `json:"startTsMs"`
 	OldCDGStat      *CDGStat `json:"oldCDGStat"`
 	NewCDGStat      *CDGStat `json:"newCDGStat"`
