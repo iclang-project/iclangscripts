@@ -23,6 +23,7 @@ Recursively traverse all *.iclang under `dir` whose `EndTsMs(in compile.json) < 
         "compileCommand": "",
         "inputAbsPath": "",
         "outputAbsPath": "",
+        "currentPath": "",
         "startTsMs": 0,
         "oldCDGStat": {
             "flag": 0,
