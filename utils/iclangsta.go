@@ -88,7 +88,8 @@ type CompStat struct {
 	CompileCommand  string   `json:"compileCommand"`
 	InputAbsPath    string   `json:"inputAbsPath"`
 	OutputAbsPath   string   `json:"outputAbsPath"`
-	CurrentPath   string   `json:"currentPath"`
+	CurrentPath     string   `json:"currentPath"`
+	Mode            int      `json:"mode"`
 	StartTsMs       int64    `json:"startTsMs"`
 	OldCDGStat      *CDGStat `json:"oldCDGStat"`
 	NewCDGStat      *CDGStat `json:"newCDGStat"`
@@ -130,20 +131,23 @@ func readCompStat(filePath string) *CompStat {
 //
 // BackTimeMs = CC1BackTimeMs + LinkTimeMs
 type IClangDirStat struct {
-	CompStatF      *CompStat `json:"compStat"`
-	CompileTimeMs  int64     `json:"compileTimeMs"`
-	FrontTimeMs    int64     `json:"frontTimeMs"`
-	BackTimeMs     int64     `json:"backTimeMs"`
-	PPTimeMs       int64     `json:"ppTimeMs"`
-	OldCDGTimeMs   int64     `json:"oldCDGTimeMs"`
-	CC1FrontTimeMs int64     `json:"cc1FrontTimeMs"`
-	NewCDGTimeMs   int64     `json:"newCDGTimeMs"`
-	CC1BackTimeMs  int64     `json:"cc1BackTimeMs"`
-	LinkTimeMs     int64     `json:"linkTimeMs"`
-	FileNum        int64     `json:"fileNum"`
-	FileSizeB      int64     `json:"fileSizeB"`
-	SrcLoc         int64     `json:"srcLoc"`
-	PPLoc          int64     `json:"ppLoc"`
+	CompStatF       *CompStat `json:"compStat"`
+	CompileTimeMs   int64     `json:"compileTimeMs"`
+	FrontTimeMs     int64     `json:"frontTimeMs"`
+	BackTimeMs      int64     `json:"backTimeMs"`
+	PPTimeMs        int64     `json:"ppTimeMs"`
+	OldCDGTimeMs    int64     `json:"oldCDGTimeMs"`
+	CC1FrontTimeMs  int64     `json:"cc1FrontTimeMs"`
+	NewCDGTimeMs    int64     `json:"newCDGTimeMs"`
+	CC1BackTimeMs   int64     `json:"cc1BackTimeMs"`
+	LinkTimeMs      int64     `json:"linkTimeMs"`
+	FullModeNum     int64     `json:"fullModeNum"`
+	IncModeNum      int64     `json:"incModeNum"`
+	NoChangeModeNum int64     `json:"noChangeModeNum"`
+	FileNum         int64     `json:"fileNum"`
+	FileSizeB       int64     `json:"fileSizeB"`
+	SrcLoc          int64     `json:"srcLoc"`
+	PPLoc           int64     `json:"ppLoc"`
 }
 
 func newIClangDirStat() *IClangDirStat {
@@ -152,7 +156,7 @@ func newIClangDirStat() *IClangDirStat {
 	}
 }
 
-func (iClangDirStat *IClangDirStat) calTime() {
+func (iClangDirStat *IClangDirStat) calTimeAndMode() {
 	compStat := iClangDirStat.CompStatF
 	iClangDirStat.CompileTimeMs = compStat.EndTsMs - compStat.StartTsMs
 	iClangDirStat.FrontTimeMs = compStat.NewCDGStat.EndTsMs - compStat.StartTsMs
@@ -163,11 +167,18 @@ func (iClangDirStat *IClangDirStat) calTime() {
 	iClangDirStat.NewCDGTimeMs = compStat.NewCDGStat.EndTsMs - compStat.NewCDGStat.StartTsMs
 	iClangDirStat.CC1BackTimeMs = compStat.StartLinkTsMs - compStat.NewCDGStat.EndTsMs
 	iClangDirStat.LinkTimeMs = compStat.EndTsMs - compStat.StartLinkTsMs
+
+	if compStat.Mode == 0 {
+		iClangDirStat.FullModeNum = 1
+	} else if compStat.Mode == 1 {
+		iClangDirStat.IncModeNum = 1
+	} else if compStat.Mode == 2 {
+		iClangDirStat.NoChangeModeNum = 1
+	}
 }
 
 func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
 	iClangDirStat.CompStatF.add(other.CompStatF)
-	iClangDirStat.FileNum += other.FileNum
 	iClangDirStat.CompileTimeMs += other.CompileTimeMs
 	iClangDirStat.FrontTimeMs += other.FrontTimeMs
 	iClangDirStat.BackTimeMs += other.BackTimeMs
@@ -177,6 +188,10 @@ func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
 	iClangDirStat.NewCDGTimeMs += other.NewCDGTimeMs
 	iClangDirStat.CC1BackTimeMs += other.CC1BackTimeMs
 	iClangDirStat.LinkTimeMs += other.LinkTimeMs
+	iClangDirStat.FullModeNum += other.FullModeNum
+	iClangDirStat.IncModeNum += other.IncModeNum
+	iClangDirStat.NoChangeModeNum += other.NoChangeModeNum
+	iClangDirStat.FileNum += other.FileNum
 	iClangDirStat.FileSizeB += other.FileSizeB
 	iClangDirStat.SrcLoc += other.SrcLoc
 	iClangDirStat.PPLoc += other.PPLoc
@@ -245,7 +260,7 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 		FileNum:   1,
 		FileSizeB: countDirSizeB(iClangDirPath),
 	}
-	res.calTime()
+	res.calTimeAndMode()
 
 	res.SrcLoc = countFileLoc(res.CompStatF.InputAbsPath)
 
