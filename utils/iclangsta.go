@@ -47,6 +47,7 @@ func mergeTVPairSlice(slice1 []*TVPair, slice2 []*TVPair) []*TVPair {
 }
 
 type CDGStat struct {
+	// 0: unchanged (only for old), 1: delete/add out of bounds, 2: normal
 	Flag            int          `json:"flag"`
 	FuncNum         int64        `json:"funcNum"`
 	FuncDefNum      int64        `json:"funcDefNum"`
@@ -89,7 +90,7 @@ type CompStat struct {
 	InputAbsPath    string   `json:"inputAbsPath"`
 	OutputAbsPath   string   `json:"outputAbsPath"`
 	CurrentPath     string   `json:"currentPath"`
-	Mode            int      `json:"mode"`
+	CanInc          bool     `json:"canInc"`
 	StartTsMs       int64    `json:"startTsMs"`
 	OldCDGStat      *CDGStat `json:"oldCDGStat"`
 	NewCDGStat      *CDGStat `json:"newCDGStat"`
@@ -131,23 +132,24 @@ func readCompStat(filePath string) *CompStat {
 //
 // BackTimeMs = CC1BackTimeMs + LinkTimeMs
 type IClangDirStat struct {
-	CompStatF       *CompStat `json:"compStat"`
-	CompileTimeMs   int64     `json:"compileTimeMs"`
-	FrontTimeMs     int64     `json:"frontTimeMs"`
-	BackTimeMs      int64     `json:"backTimeMs"`
-	PPTimeMs        int64     `json:"ppTimeMs"`
-	OldCDGTimeMs    int64     `json:"oldCDGTimeMs"`
-	CC1FrontTimeMs  int64     `json:"cc1FrontTimeMs"`
-	NewCDGTimeMs    int64     `json:"newCDGTimeMs"`
-	CC1BackTimeMs   int64     `json:"cc1BackTimeMs"`
-	LinkTimeMs      int64     `json:"linkTimeMs"`
-	FullModeNum     int64     `json:"fullModeNum"`
-	IncModeNum      int64     `json:"incModeNum"`
-	NoChangeModeNum int64     `json:"noChangeModeNum"`
-	FileNum         int64     `json:"fileNum"`
-	FileSizeB       int64     `json:"fileSizeB"`
-	SrcLoc          int64     `json:"srcLoc"`
-	PPLoc           int64     `json:"ppLoc"`
+	CompStatF      *CompStat `json:"compStat"`
+	CompileTimeMs  int64     `json:"compileTimeMs"`
+	FrontTimeMs    int64     `json:"frontTimeMs"`
+	BackTimeMs     int64     `json:"backTimeMs"`
+	PPTimeMs       int64     `json:"ppTimeMs"`
+	OldCDGTimeMs   int64     `json:"oldCDGTimeMs"`
+	CC1FrontTimeMs int64     `json:"cc1FrontTimeMs"`
+	NewCDGTimeMs   int64     `json:"newCDGTimeMs"`
+	CC1BackTimeMs  int64     `json:"cc1BackTimeMs"`
+	LinkTimeMs     int64     `json:"linkTimeMs"`
+	FullNum        int64     `json:"fullNum"`
+	NormalIncNum   int64     `json:"normalIncNum"`
+	NoChangeIncNum int64     `json:"noChangeIncNum"`
+	OOBIncNum      int64     `json:"oobIncNum"`
+	FileNum        int64     `json:"fileNum"`
+	FileSizeB      int64     `json:"fileSizeB"`
+	SrcLoc         int64     `json:"srcLoc"`
+	PPLoc          int64     `json:"ppLoc"`
 }
 
 func newIClangDirStat() *IClangDirStat {
@@ -158,23 +160,34 @@ func newIClangDirStat() *IClangDirStat {
 
 func (iClangDirStat *IClangDirStat) calTimeAndMode() {
 	compStat := iClangDirStat.CompStatF
-	iClangDirStat.CompileTimeMs = compStat.EndTsMs - compStat.StartTsMs
-	iClangDirStat.FrontTimeMs = compStat.NewCDGStat.EndTsMs - compStat.StartTsMs
-	iClangDirStat.BackTimeMs = compStat.EndTsMs - compStat.NewCDGStat.EndTsMs
-	iClangDirStat.PPTimeMs = compStat.OldCDGStat.StartTsMs - compStat.StartTsMs
-	iClangDirStat.OldCDGTimeMs = compStat.OldCDGStat.EndTsMs - compStat.OldCDGStat.StartTsMs
-	iClangDirStat.CC1FrontTimeMs = compStat.NewCDGStat.StartTsMs - compStat.OldCDGStat.EndTsMs
-	iClangDirStat.NewCDGTimeMs = compStat.NewCDGStat.EndTsMs - compStat.NewCDGStat.StartTsMs
-	iClangDirStat.CC1BackTimeMs = compStat.StartLinkTsMs - compStat.NewCDGStat.EndTsMs
-	iClangDirStat.LinkTimeMs = compStat.EndTsMs - compStat.StartLinkTsMs
+	iClangDirStat.CompileTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.EndTsMs)
+	iClangDirStat.FrontTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.NewCDGStat.EndTsMs)
+	iClangDirStat.BackTimeMs = iClangTsDiff(compStat.NewCDGStat.EndTsMs, compStat.EndTsMs)
+	iClangDirStat.PPTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.OldCDGStat.StartTsMs)
+	iClangDirStat.OldCDGTimeMs = iClangTsDiff(compStat.OldCDGStat.StartTsMs, compStat.OldCDGStat.EndTsMs)
+	iClangDirStat.CC1FrontTimeMs = iClangTsDiff(compStat.OldCDGStat.EndTsMs, compStat.NewCDGStat.StartTsMs)
+	iClangDirStat.NewCDGTimeMs = iClangTsDiff(compStat.NewCDGStat.StartTsMs, compStat.NewCDGStat.EndTsMs)
+	iClangDirStat.CC1BackTimeMs = iClangTsDiff(compStat.NewCDGStat.EndTsMs, compStat.StartLinkTsMs)
+	iClangDirStat.LinkTimeMs = iClangTsDiff(compStat.StartLinkTsMs, compStat.EndTsMs)
 
-	if compStat.Mode == 0 {
-		iClangDirStat.FullModeNum = 1
-	} else if compStat.Mode == 1 {
-		iClangDirStat.IncModeNum = 1
-	} else if compStat.Mode == 2 {
-		iClangDirStat.NoChangeModeNum = 1
+	if !compStat.CanInc {
+		iClangDirStat.FullNum = 1
+	} else {
+		if compStat.OldCDGStat.Flag == 0 {
+			iClangDirStat.NoChangeIncNum = 1
+		} else if compStat.OldCDGStat.Flag == 1 || compStat.NewCDGStat.Flag == 1 {
+			iClangDirStat.OOBIncNum = 1
+		} else {
+			iClangDirStat.NormalIncNum = 1
+		}
 	}
+}
+
+func iClangTsDiff(startTs int64, endTs int64) int64 {
+	if startTs <= 0 || endTs <= 0 || endTs - startTs < 0 {
+		return 0
+	}
+	return endTs - startTs
 }
 
 func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
@@ -188,9 +201,10 @@ func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
 	iClangDirStat.NewCDGTimeMs += other.NewCDGTimeMs
 	iClangDirStat.CC1BackTimeMs += other.CC1BackTimeMs
 	iClangDirStat.LinkTimeMs += other.LinkTimeMs
-	iClangDirStat.FullModeNum += other.FullModeNum
-	iClangDirStat.IncModeNum += other.IncModeNum
-	iClangDirStat.NoChangeModeNum += other.NoChangeModeNum
+	iClangDirStat.FullNum += other.FullNum
+	iClangDirStat.NormalIncNum += other.NormalIncNum
+	iClangDirStat.NoChangeIncNum += other.NoChangeIncNum
+	iClangDirStat.OOBIncNum += other.OOBIncNum
 	iClangDirStat.FileNum += other.FileNum
 	iClangDirStat.FileSizeB += other.FileSizeB
 	iClangDirStat.SrcLoc += other.SrcLoc
