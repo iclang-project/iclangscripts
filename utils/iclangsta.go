@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 type FuncZReason struct {
@@ -150,6 +151,7 @@ type IClangDirStat struct {
 	FileSizeB      int64     `json:"fileSizeB"`
 	SrcLoc         int64     `json:"srcLoc"`
 	PPLoc          int64     `json:"ppLoc"`
+	StaTimeMs      int64     `json:"staTimeMs"`
 }
 
 func newIClangDirStat() *IClangDirStat {
@@ -209,6 +211,7 @@ func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
 	iClangDirStat.FileSizeB += other.FileSizeB
 	iClangDirStat.SrcLoc += other.SrcLoc
 	iClangDirStat.PPLoc += other.PPLoc
+	iClangDirStat.StaTimeMs += other.StaTimeMs
 }
 
 func countDirSizeB(dirPath string) int64 {
@@ -346,12 +349,17 @@ func visitConsumer(ch chan *IClangDirStat, res *IClangDirStat) {
 //
 // 32 coroutine pool
 func CalIClangDirStat(dirPath string, baseTsMs int64) *IClangDirStat {
+	start := time.Now()
+
 	res := newIClangDirStat()
 
 	ch := make(chan *IClangDirStat, 32)
 
 	go visitProducer(ch, dirPath, baseTsMs)
 	visitConsumer(ch, res)
+
+	elapsed := time.Since(start)
+	res.StaTimeMs = elapsed.Milliseconds()
 
 	return res
 }
