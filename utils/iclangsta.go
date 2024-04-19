@@ -291,7 +291,7 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 		if fileInfo.IsDir() {
 			continue
 		}
-		if strings.HasPrefix(fileInfo.Name(), "pp.") {
+		if strings.HasPrefix(fileInfo.Name(), "pp_") {
 			ppPath = filepath.Join(iClangDirPath, fileInfo.Name())
 			break
 		}
