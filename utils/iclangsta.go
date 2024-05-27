@@ -191,7 +191,7 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 
 	res.SrcLoc = countFileLoc(res.CompStatF.InputAbsPath)
 
-	res.PPLoc = countFileLoc(filepath.Join(iClangDirPath, "ppdfff.txt"))
+	res.PPLoc = countFileLoc(filepath.Join(iClangDirPath, "ppdiff.txt"))
 
 	return res
 }
