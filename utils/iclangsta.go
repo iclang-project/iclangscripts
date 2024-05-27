@@ -13,102 +13,41 @@ import (
 	"time"
 )
 
-type FuncZReason struct {
-	InlineNum      int64 `json:"inlineNum"`
-	InvalidFuncNum int64 `json:"invalidFuncNum"`
-	UnknownDepNum  int64 `json:"unknownDepNum"`
-	DepNum         int64 `json:"depNum"`
-}
-
-func (funcZReason *FuncZReason) add(other *FuncZReason) {
-	funcZReason.InlineNum += other.InlineNum
-	funcZReason.InvalidFuncNum += other.InvalidFuncNum
-	funcZReason.UnknownDepNum += other.UnknownDepNum
-	funcZReason.DepNum += other.DepNum
-}
-
-type TVPair struct {
-	Type  int   `json:"type"`
-	Value int64 `json:"value"`
-}
-
-func mergeTVPairSlice(slice1 []*TVPair, slice2 []*TVPair) []*TVPair {
-	mp := make(map[int]int64, 0)
-	for _, p := range slice1 {
-		mp[p.Type] += p.Value
-	}
-	for _, p := range slice2 {
-		mp[p.Type] += p.Value
-	}
-	res := make([]*TVPair, 0)
-	for k, v := range mp {
-		res = append(res, &TVPair{k, v})
-	}
-	return res
-}
-
-type CDGStat struct {
-	// 0: unchanged (only for old), 1: delete/add out of bounds, 2: normal
-	Flag            int          `json:"flag"`
-	FuncNum         int64        `json:"funcNum"`
-	FuncDefNum      int64        `json:"funcDefNum"`
-	WhiteFuncNum    int64        `json:"whiteFuncNum"`
-	SpecFuncNum     int64        `json:"specFuncNum"`
-	FuncZReasonF    *FuncZReason `json:"funcZReason"`
-	InlineEdgeNum   int64        `json:"inlineEdgeNum"`
-	StartTsMs       int64        `json:"startTsMs"`
-	EndTsMs         int64        `json:"endTsMs"`
-	DoaElemNum      []*TVPair    `json:"doaElemNum"`
-	ModifiedElemNum []*TVPair    `json:"modifiedElemNum"`
-	EdgesNum        []*TVPair    `json:"edgesNum"`
-}
-
-func newCDGStat() *CDGStat {
-	return &CDGStat {
-		FuncZReasonF: &FuncZReason{},
-	}
-}
-
-func (cdgStat *CDGStat) add(other *CDGStat) {
-	cdgStat.FuncNum += other.FuncNum
-	cdgStat.FuncDefNum += other.FuncDefNum
-	cdgStat.WhiteFuncNum += other.WhiteFuncNum
-	cdgStat.SpecFuncNum += other.SpecFuncNum
-
-	cdgStat.FuncZReasonF.add(other.FuncZReasonF)
-
-	cdgStat.InlineEdgeNum += other.InlineEdgeNum
-
-	cdgStat.DoaElemNum = mergeTVPairSlice(cdgStat.DoaElemNum, other.DoaElemNum)
-	cdgStat.ModifiedElemNum = mergeTVPairSlice(cdgStat.ModifiedElemNum, other.ModifiedElemNum)
-	cdgStat.EdgesNum = mergeTVPairSlice(cdgStat.EdgesNum, other.EdgesNum)
-}
-
 type CompStat struct {
-	OriginalCommand string   `json:"originalCommand"`
-	PPCommand       string   `json:"ppCommand"`
-	CompileCommand  string   `json:"compileCommand"`
-	InputAbsPath    string   `json:"inputAbsPath"`
-	OutputAbsPath   string   `json:"outputAbsPath"`
-	CurrentPath     string   `json:"currentPath"`
-	CanInc          bool     `json:"canInc"`
-	StartTsMs       int64    `json:"startTsMs"`
-	OldCDGStat      *CDGStat `json:"oldCDGStat"`
-	NewCDGStat      *CDGStat `json:"newCDGStat"`
-	StartLinkTsMs   int64    `json:"startLinkTsMs"`
-	EndTsMs         int64    `json:"endTsMs"`
-}
+	OriginalCommand string `json:"originalCommand"`
+	PPCommand       string `json:"ppCommand"`
+	CompileCommand  string `json:"compileCommand"`
+	InputAbsPath    string `json:"inputAbsPath"`
+	OutputAbsPath   string `json:"outputAbsPath"`
+	CurrentPath     string `json:"currentPath"`
+	CanInc          bool   `json:"canInc"`
+	NoChange        bool   `json:"noChange"`
 
-func newCompStat() *CompStat {
-	return &CompStat {
-		OldCDGStat: newCDGStat(),
-		NewCDGStat: newCDGStat(),
-	}
-}
+	OldNGNum      int64 `json:"oldNGNum"`
+	NewNGNum      int64 `json:"newNGNum"`
+	OldTextCNGNum int64 `json:"oldTextCNGNum"`
+	NewTextCNGNum int64 `json:"newTextCNGNum"`
+	OldPCNGNum    int64 `json:"oldPCNGNum"`
+	NewPCNGNum    int64 `json:"newPCNGNum"`
+	RFuncXNum     int64 `json:"rFuncXNum"`
+	RFuncXLine    int64 `json:"rFuncXLine"`
+	FuncZNum      int64 `json:"funcZNum"`
+	FuncZLine     int64 `json:"funcZLine"`
 
-func (compStat *CompStat) add(other *CompStat) {
-	compStat.OldCDGStat.add(other.OldCDGStat)
-	compStat.NewCDGStat.add(other.NewCDGStat)
+	TotalTimeMs   int64 `json:"totalTimeMs"`
+	FrontTimeMs   int64 `json:"frontTimeMs"`
+	BackTimeMs    int64 `json:"backTimeMs"`
+	PPTimeMs      int64 `json:"ppTimeMs"`
+	FuncXTimeMs   int64 `json:"funcXTimeMs"`
+	DiffTimeMs    int64 `json:"diffTimeMs"`
+	OldNGDGTimeMs int64 `json:"oldNGDGTimeMs"`
+	NewNGDGTimeMs int64 `json:"newNGDGTimeMs"`
+	FuncZTimeMs   int64 `json:"funcZTimeMs"`
+	FuncVTimeMs   int64 `json:"funcVTimeMs"`
+
+	StartTsMs int64 `json:"startTsMs"`
+	MidTsMs   int64 `json:"midTsMs"`
+	EndTsMs   int64 `json:"endTsMs"`
 }
 
 func readCompStat(filePath string) *CompStat {
@@ -127,91 +66,56 @@ func readCompStat(filePath string) *CompStat {
 	return &compStat
 }
 
-// CompileTimeMs = FrontTimeMs + BackTimeMs
-//
-// FrontTimeMs = PPTimeMs + OldCDGTimeMs + CC1FrontTimeMs + NewCDGTimeMs
-//
-// BackTimeMs = CC1BackTimeMs + LinkTimeMs
+func (cur *CompStat) add(another *CompStat) {
+	cur.OldNGNum += another.OldNGNum
+	cur.NewNGNum += another.NewNGNum
+	cur.OldTextCNGNum += another.OldTextCNGNum
+	cur.NewTextCNGNum += another.NewTextCNGNum
+	cur.OldPCNGNum += another.OldPCNGNum
+	cur.NewPCNGNum += another.NewPCNGNum
+	cur.RFuncXNum += another.RFuncXNum
+	cur.RFuncXLine += another.RFuncXLine
+	cur.FuncZNum += another.FuncZNum
+	cur.FuncZLine += another.FuncZLine
+
+	cur.TotalTimeMs += another.TotalTimeMs
+	cur.FrontTimeMs += another.FrontTimeMs
+	cur.BackTimeMs += another.BackTimeMs
+	cur.PPTimeMs += another.PPTimeMs
+	cur.FuncXTimeMs += another.FuncXTimeMs
+	cur.DiffTimeMs += another.DiffTimeMs
+	cur.OldNGDGTimeMs += another.OldNGDGTimeMs
+	cur.NewNGDGTimeMs += another.NewNGDGTimeMs
+	cur.FuncZTimeMs += another.FuncZTimeMs
+	cur.FuncVTimeMs += another.FuncVTimeMs
+}
+
 type IClangDirStat struct {
-	CompStatF      *CompStat `json:"compStat"`
-	CompileTimeMs  int64     `json:"compileTimeMs"`
-	FrontTimeMs    int64     `json:"frontTimeMs"`
-	BackTimeMs     int64     `json:"backTimeMs"`
-	PPTimeMs       int64     `json:"ppTimeMs"`
-	OldCDGTimeMs   int64     `json:"oldCDGTimeMs"`
-	CC1FrontTimeMs int64     `json:"cc1FrontTimeMs"`
-	NewCDGTimeMs   int64     `json:"newCDGTimeMs"`
-	CC1BackTimeMs  int64     `json:"cc1BackTimeMs"`
-	LinkTimeMs     int64     `json:"linkTimeMs"`
-	FullNum        int64     `json:"fullNum"`
-	NormalIncNum   int64     `json:"normalIncNum"`
-	NoChangeIncNum int64     `json:"noChangeIncNum"`
-	OOBIncNum      int64     `json:"oobIncNum"`
-	FileNum        int64     `json:"fileNum"`
-	FileSizeB      int64     `json:"fileSizeB"`
-	SrcLoc         int64     `json:"srcLoc"`
-	PPLoc          int64     `json:"ppLoc"`
-	StaTimeMs      int64     `json:"staTimeMs"`
+	CompStatF   *CompStat `json:"compStat"`
+	IncNum      int64     `json:"incNum"`
+	NoChangeNum int64     `json:"noChangeNum"`
+	FileNum     int64     `json:"fileNum"`
+	FileSizeB   int64     `json:"fileSizeB"`
+	SrcLoc      int64     `json:"srcLoc"`
+	PPLoc       int64     `json:"ppLoc"`
+	StaTimeMs   int64     `json:"staTimeMs"`
 }
 
-func newIClangDirStat() *IClangDirStat {
-	return &IClangDirStat {
-		CompStatF: newCompStat(),
+func NewIClangDirStat() *IClangDirStat {
+	return &IClangDirStat{
+		CompStatF: &CompStat{},
 	}
 }
 
-func (iClangDirStat *IClangDirStat) calTimeAndMode() {
-	compStat := iClangDirStat.CompStatF
-	iClangDirStat.CompileTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.EndTsMs)
-	iClangDirStat.FrontTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.NewCDGStat.EndTsMs)
-	iClangDirStat.BackTimeMs = iClangTsDiff(compStat.NewCDGStat.EndTsMs, compStat.EndTsMs)
-	iClangDirStat.PPTimeMs = iClangTsDiff(compStat.StartTsMs, compStat.OldCDGStat.StartTsMs)
-	iClangDirStat.OldCDGTimeMs = iClangTsDiff(compStat.OldCDGStat.StartTsMs, compStat.OldCDGStat.EndTsMs)
-	iClangDirStat.CC1FrontTimeMs = iClangTsDiff(compStat.OldCDGStat.EndTsMs, compStat.NewCDGStat.StartTsMs)
-	iClangDirStat.NewCDGTimeMs = iClangTsDiff(compStat.NewCDGStat.StartTsMs, compStat.NewCDGStat.EndTsMs)
-	iClangDirStat.CC1BackTimeMs = iClangTsDiff(compStat.NewCDGStat.EndTsMs, compStat.StartLinkTsMs)
-	iClangDirStat.LinkTimeMs = iClangTsDiff(compStat.StartLinkTsMs, compStat.EndTsMs)
-
-	if !compStat.CanInc {
-		iClangDirStat.FullNum = 1
-	} else {
-		if compStat.OldCDGStat.Flag == 0 {
-			iClangDirStat.NoChangeIncNum = 1
-		} else if compStat.OldCDGStat.Flag == 1 || compStat.NewCDGStat.Flag == 1 {
-			iClangDirStat.OOBIncNum = 1
-		} else {
-			iClangDirStat.NormalIncNum = 1
-		}
-	}
-}
-
-func iClangTsDiff(startTs int64, endTs int64) int64 {
-	if startTs <= 0 || endTs <= 0 || endTs - startTs < 0 {
-		return 0
-	}
-	return endTs - startTs
-}
-
-func (iClangDirStat *IClangDirStat) add(other *IClangDirStat) {
-	iClangDirStat.CompStatF.add(other.CompStatF)
-	iClangDirStat.CompileTimeMs += other.CompileTimeMs
-	iClangDirStat.FrontTimeMs += other.FrontTimeMs
-	iClangDirStat.BackTimeMs += other.BackTimeMs
-	iClangDirStat.PPTimeMs += other.PPTimeMs
-	iClangDirStat.OldCDGTimeMs += other.OldCDGTimeMs
-	iClangDirStat.CC1FrontTimeMs += other.CC1FrontTimeMs
-	iClangDirStat.NewCDGTimeMs += other.NewCDGTimeMs
-	iClangDirStat.CC1BackTimeMs += other.CC1BackTimeMs
-	iClangDirStat.LinkTimeMs += other.LinkTimeMs
-	iClangDirStat.FullNum += other.FullNum
-	iClangDirStat.NormalIncNum += other.NormalIncNum
-	iClangDirStat.NoChangeIncNum += other.NoChangeIncNum
-	iClangDirStat.OOBIncNum += other.OOBIncNum
-	iClangDirStat.FileNum += other.FileNum
-	iClangDirStat.FileSizeB += other.FileSizeB
-	iClangDirStat.SrcLoc += other.SrcLoc
-	iClangDirStat.PPLoc += other.PPLoc
-	iClangDirStat.StaTimeMs += other.StaTimeMs
+func (cur *IClangDirStat) add(another *IClangDirStat) {
+	cur.CompStatF.add(another.CompStatF)
+	cur.IncNum += another.IncNum
+	cur.NoChangeNum += another.NoChangeNum
+	cur.FileNum += another.FileNum
+	cur.FileSizeB += another.FileSizeB
+	cur.SrcLoc += another.SrcLoc
+	cur.PPLoc += another.PPLoc
+	cur.StaTimeMs += another.StaTimeMs
 }
 
 func countDirSizeB(dirPath string) int64 {
@@ -272,32 +176,22 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 		return nil
 	}
 
-	res := &IClangDirStat {
-		CompStatF: readCompStat(compJsonPath),
+	res := &IClangDirStat{
+		CompStatF: compStat,
 		FileNum:   1,
 		FileSizeB: countDirSizeB(iClangDirPath),
 	}
-	res.calTimeAndMode()
+
+	if res.CompStatF.CanInc {
+		res.IncNum = 1
+	}
+	if res.CompStatF.NoChange {
+		res.NoChangeNum = 1
+	}
 
 	res.SrcLoc = countFileLoc(res.CompStatF.InputAbsPath)
 
-	// Find pp.c or pp.cpp
-	var ppPath string
-	files, err := ioutil.ReadDir(iClangDirPath)
-	if err != nil {
-		log.Fatalln("Failed to read iClangDirPath:", err)
-	}
-	for _, fileInfo := range files {
-		if fileInfo.IsDir() {
-			continue
-		}
-		if strings.HasPrefix(fileInfo.Name(), "pp_") {
-			ppPath = filepath.Join(iClangDirPath, fileInfo.Name())
-			break
-		}
-	}
-
-	res.PPLoc = countFileLoc(ppPath)
+	res.PPLoc = countFileLoc(filepath.Join(iClangDirPath, "ppdfff.txt"))
 
 	return res
 }
@@ -308,14 +202,14 @@ func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, lim chan int, dirPath str
 		lim <- 1
 		go func(_wg *sync.WaitGroup, _ch chan *IClangDirStat, _lim chan int, _dirPath string, _baseTsMs int64) {
 			defer func() {
-				<- _lim
+				<-_lim
 				wg.Done()
-			} ()
+			}()
 			iClangDirStat := readIClangDirStat(_dirPath, _baseTsMs)
 			if iClangDirStat != nil {
 				_ch <- iClangDirStat
 			}
-		} (wg, ch, lim, dirPath, baseTsMs)
+		}(wg, ch, lim, dirPath, baseTsMs)
 	}
 
 	files, err := ioutil.ReadDir(dirPath)
@@ -351,7 +245,7 @@ func visitConsumer(ch chan *IClangDirStat, res *IClangDirStat) {
 func CalIClangDirStat(dirPath string, baseTsMs int64) *IClangDirStat {
 	start := time.Now()
 
-	res := newIClangDirStat()
+	res := NewIClangDirStat()
 
 	ch := make(chan *IClangDirStat, 32)
 

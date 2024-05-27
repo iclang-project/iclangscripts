@@ -22,22 +22,22 @@ func CurrentTsMs() int64 {
 }
 
 type CommitSta struct {
-	CommitId string `json:"commitId"`
+	CommitId      string         `json:"commitId"`
 	IClangDirStaF *IClangDirStat `json:"iClangDirSta"`
-	BuildTimeMs int64 `json:"buildTimeMs"`
+	BuildTimeMs   int64          `json:"buildTimeMs"`
 }
 
 func NewCommitSta() *CommitSta {
 	return &CommitSta{
-		IClangDirStaF: newIClangDirStat(),
+		IClangDirStaF: NewIClangDirStat(),
 	}
 }
 
 func NewCommitStaX(dirPath string, baseTimestampMs int64, commitId string, buildTimeMs int64) *CommitSta {
 	return &CommitSta{
-		CommitId:  commitId,
+		CommitId:      commitId,
 		IClangDirStaF: CalIClangDirStat(dirPath, baseTimestampMs),
-		BuildTimeMs: buildTimeMs,
+		BuildTimeMs:   buildTimeMs,
 	}
 }
 
@@ -64,4 +64,3 @@ func SaveCommitsStaToFile(commitsSta CommitsSta, filePath string) {
 		log.Fatalln("Can not save json:", err)
 	}
 }
-

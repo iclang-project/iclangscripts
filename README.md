@@ -13,78 +13,7 @@ Build:
 sta <dir> <baseTsMs>
 ```
 
-Recursively traverse all *.iclang under `dir` whose `EndTsMs(in compile.json) < `, accumulate the following data:
-
-```shell
-{
-    "compStat": {
-        "originalCommand": "",
-        "ppCommand": "",
-        "compileCommand": "",
-        "inputAbsPath": "",
-        "outputAbsPath": "",
-        "currentPath": "",
-        "startTsMs": 0,
-        "oldCDGStat": {
-            "flag": 0,
-            "funcNum": 0,
-            "funcDefNum": 0,
-            "whiteFuncNum": 0,
-            "specFuncNum": 0,
-            "funcZReason": {
-                "inlineNum": 0,
-                "invalidFuncNum": 0,
-                "unknownDepNum": 0,
-                "depNum": 0
-            },
-            "inlineEdgeNum": 0,
-            "startTsMs": 0,
-            "endTsMs": 0,
-            "doaElemNum": [],
-            "modifiedElemNum": [],
-            "edgesNum": []
-        },
-        "newCDGStat": {
-            "flag": 0,
-            "funcNum": 0,
-            "funcDefNum": 0,
-            "whiteFuncNum": 0,
-            "specFuncNum": 0,
-            "funcZReason": {
-                "inlineNum": 0,
-                "invalidFuncNum": 0,
-                "unknownDepNum": 0,
-                "depNum": 0
-            },
-            "inlineEdgeNum": 0,
-            "startTsMs": 0,
-            "endTsMs": 0,
-            "doaElemNum": [],
-            "modifiedElemNum": [],
-            "edgesNum": []
-        },
-        "startLinkTsMs": 0,
-        "endTsMs": 0
-    },
-    "compileTimeMs": 0,
-    "frontTimeMs": 0,
-    "backTimeMs": 0,
-    "ppTimeMs": 0,
-    "oldCDGTimeMs": 0,
-    "cc1FrontTimeMs": 0,
-    "newCDGTimeMs": 0,
-    "cc1BackTimeMs": 0,
-    "linkTimeMs": 0,
-    "fullNum": 0,
-    "normalIncNum": 0,
-    "noChangeIncNum": 0,
-    "oobIncNum": 0,
-    "fileNum": 0,
-    "fileSizeB": 0,
-    "srcLoc": 0,
-    "ppLoc": 0
-}
-```
+Recursively traverse all *.iclang under `dir` whose `EndTsMs(in compile.json) < `, accumulate `IClangDirStat`.
 
 (2) 2x
 
