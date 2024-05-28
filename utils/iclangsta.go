@@ -22,6 +22,7 @@ type CompStat struct {
 	CurrentPath     string `json:"currentPath"`
 	CanInc          bool   `json:"canInc"`
 	NoChange        bool   `json:"noChange"`
+	BackToFull      bool   `json:"backToFull"`
 
 	OldNGNum      int64 `json:"oldNGNum"`
 	NewNGNum      int64 `json:"newNGNum"`
@@ -91,14 +92,15 @@ func (cur *CompStat) add(another *CompStat) {
 }
 
 type IClangDirStat struct {
-	CompStatF   *CompStat `json:"compStat"`
-	IncNum      int64     `json:"incNum"`
-	NoChangeNum int64     `json:"noChangeNum"`
-	FileNum     int64     `json:"fileNum"`
-	FileSizeB   int64     `json:"fileSizeB"`
-	SrcLoc      int64     `json:"srcLoc"`
-	PPLoc       int64     `json:"ppLoc"`
-	StaTimeMs   int64     `json:"staTimeMs"`
+	CompStatF     *CompStat `json:"compStat"`
+	IncNum        int64     `json:"incNum"`
+	NoChangeNum   int64     `json:"noChangeNum"`
+	BackToFullNum int64     `json:"backToFullNum"`
+	FileNum       int64     `json:"fileNum"`
+	FileSizeB     int64     `json:"fileSizeB"`
+	SrcLoc        int64     `json:"srcLoc"`
+	PPLoc         int64     `json:"ppLoc"`
+	StaTimeMs     int64     `json:"staTimeMs"`
 }
 
 func NewIClangDirStat() *IClangDirStat {
@@ -111,6 +113,7 @@ func (cur *IClangDirStat) add(another *IClangDirStat) {
 	cur.CompStatF.add(another.CompStatF)
 	cur.IncNum += another.IncNum
 	cur.NoChangeNum += another.NoChangeNum
+	cur.BackToFullNum += another.BackToFullNum
 	cur.FileNum += another.FileNum
 	cur.FileSizeB += another.FileSizeB
 	cur.SrcLoc += another.SrcLoc
@@ -187,6 +190,9 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 	}
 	if res.CompStatF.NoChange {
 		res.NoChangeNum = 1
+	}
+	if res.CompStatF.BackToFull {
+		res.BackToFullNum = 1
 	}
 
 	res.SrcLoc = countFileLoc(res.CompStatF.InputAbsPath)
