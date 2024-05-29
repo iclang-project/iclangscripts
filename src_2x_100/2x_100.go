@@ -19,7 +19,8 @@ func split2(line string) (string, string) {
 
 func main() {
 	if len(os.Args) != 4 {
-		fmt.Println("Usage: 2x_100 <benchmarkdir> <projects> <logdir>")
+		fmt.Println("Usage: 2x_100 <benchmarkdir> <projects> <logdir> <enableIClang>")
+		fmt.Println("For example: ./2x_100 ../ all ./log 1")
 		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
 		os.Exit(1)
 	}
@@ -51,6 +52,8 @@ func main() {
 		_ = os.Mkdir(projectLogDir, 0777)
 	}
 
+	_ = os.Unsetenv("ICLANG")
+
 	var wg sync.WaitGroup
 	sem := make(chan int, 2)
 	startTime := time.Now()
@@ -81,12 +84,23 @@ func main() {
 				gitPrevStr = "fossil checkout prev"
 			}
 
+			env := os.Environ()
+			if os.Args[4] == "1" {
+				if projectName == "sqlite" {
+					env = append(env, "ICLANG=mode:normal,backupo=true")
+				} else {
+					env = append(env, "ICLANG=mode:normal,backupo=false")
+				}
+			} else {
+				env = append(env, "ICLANG=mode:profile")
+			}
+
 			fmt.Printf("[%d/%d] Running 100commits in %s ...\n",
 				id+1, totalTasks, projectPath)
 
 			// Init
 			fmt.Printf("Task %d init\n", id+1)
-			initCmdStr :=  "rm -f " + projectLogPath + " && rm -f " + projectStaJsonPath +
+			initCmdStr := "rm -f " + projectLogPath + " && rm -f " + projectStaJsonPath +
 				" && cd " + projectPath +
 				" && ./init.sh > " + projectLogPath + " 2>&1"
 			initCmd := exec.Command("/bin/bash", "-c", initCmdStr)
@@ -103,7 +117,7 @@ func main() {
 			// Checkout to the HEAD^ of the first commit
 			firstCommitId, _ := split2(lines[len(lines)-1])
 			fmt.Printf("Task %d checkout to the HEAD^ of %s\n", id+1, firstCommitId)
-			firstCheckoutCmdStr :=  "cd " + projectSrcPath +
+			firstCheckoutCmdStr := "cd " + projectSrcPath +
 				" && " + gitStr + " checkout " + firstCommitId + " > " + projectLogPath + " 2>&1" +
 				" && " + gitPrevStr + " >> " + projectLogPath + " 2>&1"
 			firstCheckoutCmd := exec.Command("/bin/bash", "-c", firstCheckoutCmdStr)
@@ -116,7 +130,7 @@ func main() {
 
 			// config
 			fmt.Printf("Task %d config\n", id+1)
-			configCmdStr :=  "cd " + projectPath +
+			configCmdStr := "cd " + projectPath +
 				" && ./config.sh >> " + projectLogPath + " 2>&1"
 			configCmd := exec.Command("/bin/bash", "-c", configCmdStr)
 			_, err = configCmd.CombinedOutput()
@@ -128,8 +142,9 @@ func main() {
 			// First full build
 			fmt.Printf("Task %d first full build\n", id+1)
 			curTimestampMs := utils.CurrentTsMs()
-			fullBuildCmdStr :=  "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
+			fullBuildCmdStr := "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
 			fullBuildCmd := exec.Command("/bin/bash", "-c", fullBuildCmdStr)
+			fullBuildCmd.Env = env
 			_, err = fullBuildCmd.CombinedOutput()
 			if err != nil {
 				fmt.Printf("Task %d first full build error, see %s for more details.\n", id+1, projectLogPath)
@@ -138,7 +153,7 @@ func main() {
 			preTimestampMs := curTimestampMs
 			curTimestampMs = utils.CurrentTsMs()
 			// First full build sta, regard as a special commit
-			fullBuildSta := utils.NewCommitStaX(projectPath, 0, "firstFull", curTimestampMs - preTimestampMs)
+			fullBuildSta := utils.NewCommitStaX(projectPath, 0, "firstFull", curTimestampMs-preTimestampMs)
 			//utils.DumpFds();
 
 			commitsSta := utils.NewCommitsSta()
@@ -146,7 +161,7 @@ func main() {
 
 			// Inc build 100 commits
 			commitNum := 0
-			for j := len(lines)-1; j >= 0; j -= 1 {
+			for j := len(lines) - 1; j >= 0; j -= 1 {
 				// read commitId and flag
 				commitId, flag := split2(lines[j])
 				if flag != "yes" {
@@ -156,7 +171,7 @@ func main() {
 				// git checkout
 				commitNum += 1
 				fmt.Printf("Task %d inc build %d\n", id+1, commitNum)
-				gitCheckoutCmdStr :=  "cd " + projectSrcPath +
+				gitCheckoutCmdStr := "cd " + projectSrcPath +
 					" && " + gitStr + " checkout " + commitId + " >> " + projectLogPath + " 2>&1"
 				gitCheckoutCmd := exec.Command("/bin/bash", "-c", gitCheckoutCmdStr)
 				_, err := gitCheckoutCmd.CombinedOutput()
@@ -167,8 +182,9 @@ func main() {
 
 				// Inc build
 				curTimestampMs = utils.CurrentTsMs()
-				incBuildCmdStr :=  "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
+				incBuildCmdStr := "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
 				incBuildCmd := exec.Command("/bin/bash", "-c", incBuildCmdStr)
+				incBuildCmd.Env = env
 				_, err = incBuildCmd.CombinedOutput()
 				if err != nil {
 					fmt.Printf("Task %d inc build %s error, see %s for more details.\n", id+1, commitId, projectLogPath)
@@ -177,7 +193,7 @@ func main() {
 				preTimestampMs = curTimestampMs
 				curTimestampMs = utils.CurrentTsMs()
 				// Inc full build sta
-				incBuildSta := utils.NewCommitStaX(projectPath, preTimestampMs, commitId, curTimestampMs - preTimestampMs)
+				incBuildSta := utils.NewCommitStaX(projectPath, preTimestampMs, commitId, curTimestampMs-preTimestampMs)
 				//utils.DumpFds()
 				commitsSta = append(commitsSta, incBuildSta)
 
@@ -205,8 +221,9 @@ func main() {
 			fmt.Printf("Task %d test\n", id+1)
 			testFlag := false
 			for j := 0; j < 3; j += 1 {
-				testCmdStr :=  "cd " + projectPath + " && ./test.sh >> " + projectLogPath + " 2>&1"
+				testCmdStr := "cd " + projectPath + " && ./test.sh >> " + projectLogPath + " 2>&1"
 				testCmd := exec.Command("/bin/bash", "-c", testCmdStr)
+				testCmd.Env = env
 				_, err = testCmd.CombinedOutput()
 				if err == nil {
 					testFlag = true

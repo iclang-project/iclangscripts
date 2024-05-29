@@ -18,7 +18,8 @@ Recursively traverse all *.iclang under `dir` whose `EndTsMs(in compile.json) < 
 (2) 2x
 
 ```shell
-2x <benchmarkdir> <projects> <scriptname> <logdir>
+2x <benchmarkdir> <projects> <scriptname> <logdir> <enableIClang>
+# For example: ./2x ../ all checkbugs ./log 1
 # Note: (1) <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython
 #       (2) Do not provide '.sh' in <scriptname>
 ```
@@ -39,7 +40,8 @@ Take llvm as an example, you can use `tail -f <logdir>/llvm/<scriptname>.log` to
 (3) 2x_100
 
 ```shell
-2x_100 <benchmarkdir> <projects> <logdir>
+2x_100 <benchmarkdir> <projects> <logdir> <enableIClang>
+# For example: ./2x_100 ../ all ./log 1
 ```
 
 Run 100 commits through a coroutine pool of size 2 in:
@@ -55,48 +57,3 @@ Run 100 commits through a coroutine pool of size 2 in:
 
 Take llvm as an example, you can use `tail -f <logdir>/llvm/100commits.log` to see the log,
 and you can use `cat <logdir>/llvm/100commits.json` to see the json result.
-
-(4) collect100.sh / collect100_fossil.sh
-
-```shell
-./collect100.sh <git-project-path> <log-path>
-```
-
-cd `git-project-path`, starting from HEAD, collect 100 commits with code changes from new to old, save the result in `log-path`, format:
-
-```shell
-# each line, from new to old:
-commitId yes|no|error [time(s)]
-# yes: commit with code changes
-# no: commit without code changes
-# error: compilation error
-# time: build time(s) for 'yes' and 'no'
-# exit when the total number of 'error' >= 100
-```
-
-`collect100_fossil.sh` is the same as `collect100.sh`, it works for fossil projects.
-
-(5) collect100_cmp.sh / collect100_fossil_cmp.sh
-
-```shell
-./collect100.sh <git-project-path> <log-path> <commit-num>
-```
-
-cd `git-project-path`, starting from HEAD, collect `<commit-num>` commits from new to old, save the result in `log-path`, format:
-
- ```shell
- # each line, from new to old:
- commitId yes|error [time(s)]
- ```
-
-Unlike`collect100.sh`, `collect100_cmp.sh` does not enable IClang, but rather enable a normal compiler.
-
-We will leverage the result of  `collect100_cmp.sh` to check the result of`collect100.sh`.
-
-(6) format_commit_log.sh
-
-```shell
-./format_commits_log.sh <original-commits-log> <formated-commits-log>
-```
-
-Just change each `commitId yes|no|error [time(s)]` to `commitId yes|no|error`.

@@ -12,8 +12,9 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Println("Usage: 2x <benchmarkdir> <projects> <scriptname> <logdir>")
+	if len(os.Args) != 6 {
+		fmt.Println("Usage: 2x <benchmarkdir> <projects> <scriptname> <logdir> <enableIClang>")
+		fmt.Println("For example: ./2x ../ all checkbugs ./log 1")
 		fmt.Println("Note: (1) <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
 		fmt.Println("      (2) Do not provide '.sh' in <scriptname>")
 		os.Exit(1)
@@ -51,6 +52,8 @@ func main() {
 		_ = os.Mkdir(projectLogDir, 0777)
 	}
 
+	_ = os.Unsetenv("ICLANG")
+
 	var wg sync.WaitGroup
 	sem := make(chan int, 2)
 	startTime := time.Now()
@@ -70,7 +73,18 @@ func main() {
 
 			projectName := projects[id]
 			projectPath := filepath.Join(benchmarkDir, projectName)
-			projectLogPath := filepath.Join(logDir, projectName, scriptName + ".log")
+			projectLogPath := filepath.Join(logDir, projectName, scriptName+".log")
+
+			env := os.Environ()
+			if os.Args[4] == "1" {
+				if projectName == "sqlite" {
+					env = append(env, "ICLANG=mode:normal,backupo=true")
+				} else {
+					env = append(env, "ICLANG=mode:normal,backupo=false")
+				}
+			} else {
+				env = append(env, "ICLANG=mode:profile")
+			}
 
 			fmt.Printf("[%d/%d] Running %s in %s ...\n",
 				id+1, totalTasks, scriptName, projectPath)
@@ -78,6 +92,8 @@ func main() {
 			cmdStr := "cd " + projectPath + " && rm -f " + projectLogPath +
 				" && ./" + scriptName + ".sh > " + projectLogPath + " 2>&1"
 			cmd := exec.Command("/bin/bash", "-c", cmdStr)
+
+			cmd.Env = env
 
 			_, err := cmd.CombinedOutput()
 			if err != nil {
