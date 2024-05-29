@@ -18,7 +18,7 @@ func split2(line string) (string, string) {
 }
 
 func main() {
-	if len(os.Args) != 4 {
+	if len(os.Args) != 5 {
 		fmt.Println("Usage: 2x_100 <benchmarkdir> <projects> <logdir> <enableIClang>")
 		fmt.Println("For example: ./2x_100 ../ all ./log 1")
 		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
