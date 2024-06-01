@@ -33,8 +33,6 @@ type CompStat struct {
 	NewFuncNum    int64 `json:"newFuncNum"`
 	RFuncXNum     int64 `json:"rFuncXNum"`
 	RFuncXLine    int64 `json:"rFuncXLine"`
-	FuncZNum      int64 `json:"funcZNum"`
-	FuncZLine     int64 `json:"funcZLine"`
 
 	TotalTimeMs   int64 `json:"totalTimeMs"`
 	FrontTimeMs   int64 `json:"frontTimeMs"`
@@ -44,8 +42,6 @@ type CompStat struct {
 	DiffTimeMs    int64 `json:"diffTimeMs"`
 	OldNGDGTimeMs int64 `json:"oldNGDGTimeMs"`
 	NewNGDGTimeMs int64 `json:"newNGDGTimeMs"`
-	FuncZTimeMs   int64 `json:"funcZTimeMs"`
-	FuncVTimeMs   int64 `json:"funcVTimeMs"`
 
 	StartTsMs int64 `json:"startTsMs"`
 	MidTsMs   int64 `json:"midTsMs"`
@@ -78,8 +74,6 @@ func (cur *CompStat) add(another *CompStat) {
 	cur.NewFuncNum += another.NewFuncNum
 	cur.RFuncXNum += another.RFuncXNum
 	cur.RFuncXLine += another.RFuncXLine
-	cur.FuncZNum += another.FuncZNum
-	cur.FuncZLine += another.FuncZLine
 
 	cur.TotalTimeMs += another.TotalTimeMs
 	cur.FrontTimeMs += another.FrontTimeMs
@@ -89,8 +83,6 @@ func (cur *CompStat) add(another *CompStat) {
 	cur.DiffTimeMs += another.DiffTimeMs
 	cur.OldNGDGTimeMs += another.OldNGDGTimeMs
 	cur.NewNGDGTimeMs += another.NewNGDGTimeMs
-	cur.FuncZTimeMs += another.FuncZTimeMs
-	cur.FuncVTimeMs += another.FuncVTimeMs
 }
 
 type IClangDirStat struct {
