@@ -31,8 +31,8 @@ type CompStat struct {
 	OldPCNGNum    int64 `json:"oldPCNGNum"`
 	NewPCNGNum    int64 `json:"newPCNGNum"`
 	NewFuncNum    int64 `json:"newFuncNum"`
-	RFuncXNum     int64 `json:"rFuncXNum"`
-	RFuncXLine    int64 `json:"rFuncXLine"`
+	FuncXNum      int64 `json:"funcXNum"`
+	FuncXLine     int64 `json:"funcXLine"`
 
 	TotalTimeMs   int64 `json:"totalTimeMs"`
 	FrontTimeMs   int64 `json:"frontTimeMs"`
@@ -72,8 +72,8 @@ func (cur *CompStat) add(another *CompStat) {
 	cur.OldPCNGNum += another.OldPCNGNum
 	cur.NewPCNGNum += another.NewPCNGNum
 	cur.NewFuncNum += another.NewFuncNum
-	cur.RFuncXNum += another.RFuncXNum
-	cur.RFuncXLine += another.RFuncXLine
+	cur.FuncXNum += another.FuncXNum
+	cur.FuncXLine += another.FuncXLine
 
 	cur.TotalTimeMs += another.TotalTimeMs
 	cur.FrontTimeMs += another.FrontTimeMs
