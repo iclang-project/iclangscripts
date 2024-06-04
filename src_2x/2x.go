@@ -44,7 +44,7 @@ func main() {
 	}
 	logDir, err := filepath.Abs(os.Args[4])
 	if err != nil {
-		log.Fatalf("Can not convert %s to abs path\n", os.Args[3])
+		log.Fatalf("Can not convert %s to abs path\n", os.Args[4])
 	}
 	_ = os.Mkdir(logDir, 0777)
 	for _, project := range projects {
@@ -76,7 +76,7 @@ func main() {
 			projectLogPath := filepath.Join(logDir, projectName, scriptName+".log")
 
 			env := os.Environ()
-			if os.Args[4] == "1" {
+			if os.Args[5] == "1" {
 				if projectName == "sqlite" {
 					env = append(env, "ICLANG=mode:normal,backupo:true")
 				} else {
