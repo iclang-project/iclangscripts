@@ -42,6 +42,7 @@ type CompStat struct {
 	DiffTimeMs    int64 `json:"diffTimeMs"`
 	OldNGDGTimeMs int64 `json:"oldNGDGTimeMs"`
 	NewNGDGTimeMs int64 `json:"newNGDGTimeMs"`
+	FuncVTimeMs   int64 `json:"funcVTimeMs"`
 
 	StartTsMs int64 `json:"startTsMs"`
 	MidTsMs   int64 `json:"midTsMs"`
@@ -83,6 +84,7 @@ func (cur *CompStat) add(another *CompStat) {
 	cur.DiffTimeMs += another.DiffTimeMs
 	cur.OldNGDGTimeMs += another.OldNGDGTimeMs
 	cur.NewNGDGTimeMs += another.NewNGDGTimeMs
+	cur.FuncVTimeMs += another.FuncVTimeMs
 }
 
 type IClangDirStat struct {
