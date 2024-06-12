@@ -20,29 +20,22 @@ type CompStat struct {
 	InputAbsPath    string `json:"inputAbsPath"`
 	OutputAbsPath   string `json:"outputAbsPath"`
 	CurrentPath     string `json:"currentPath"`
-	CanInc          bool   `json:"canInc"`
-	NoChange        bool   `json:"noChange"`
-	BackToFull      bool   `json:"backToFull"`
 
-	OldNGNum      int64 `json:"oldNGNum"`
-	NewNGNum      int64 `json:"newNGNum"`
-	OldTextCNGNum int64 `json:"oldTextCNGNum"`
-	NewTextCNGNum int64 `json:"newTextCNGNum"`
-	OldPCNGNum    int64 `json:"oldPCNGNum"`
-	NewPCNGNum    int64 `json:"newPCNGNum"`
-	NewFuncNum    int64 `json:"newFuncNum"`
-	FuncXNum      int64 `json:"funcXNum"`
-	FuncXLine     int64 `json:"funcXLine"`
+	IncNum         int64 `json:"incNum"`
+	NoChangeNum    int64 `json:"noChangeNum"`
+	BackToFullNum  int64 `json:"backToFullNum"`
+	FuncNum        int64 `json:"funcNum"`
+	ChangedFuncNum int64 `json:"changedFuncNum"`
+	FuncXNum       int64 `json:"funcXNum"`
 
-	TotalTimeMs   int64 `json:"totalTimeMs"`
-	FrontTimeMs   int64 `json:"frontTimeMs"`
-	BackTimeMs    int64 `json:"backTimeMs"`
-	PPTimeMs      int64 `json:"ppTimeMs"`
-	FuncXTimeMs   int64 `json:"funcXTimeMs"`
-	DiffTimeMs    int64 `json:"diffTimeMs"`
-	OldNGDGTimeMs int64 `json:"oldNGDGTimeMs"`
-	NewNGDGTimeMs int64 `json:"newNGDGTimeMs"`
-	FuncVTimeMs   int64 `json:"funcVTimeMs"`
+	TotalTimeMs int64 `json:"totalTimeMs"`
+	FrontTimeMs int64 `json:"frontTimeMs"`
+	BackTimeMs  int64 `json:"backTimeMs"`
+	PPTimeMs    int64 `json:"ppTimeMs"`
+	DiffTimeMs  int64 `json:"diffTimeMs"`
+	FuncXTimeMs int64 `json:"funcXTimeMs"`
+	ASTTimeMs   int64 `json:"astTimeMs"`
+	FuncVTimeMs int64 `json:"funcVTimeMs"`
 
 	StartTsMs int64 `json:"startTsMs"`
 	MidTsMs   int64 `json:"midTsMs"`
@@ -66,37 +59,30 @@ func readCompStat(filePath string) *CompStat {
 }
 
 func (cur *CompStat) add(another *CompStat) {
-	cur.OldNGNum += another.OldNGNum
-	cur.NewNGNum += another.NewNGNum
-	cur.OldTextCNGNum += another.OldTextCNGNum
-	cur.NewTextCNGNum += another.NewTextCNGNum
-	cur.OldPCNGNum += another.OldPCNGNum
-	cur.NewPCNGNum += another.NewPCNGNum
-	cur.NewFuncNum += another.NewFuncNum
+	cur.IncNum += another.IncNum
+	cur.NoChangeNum += another.NoChangeNum
+	cur.BackToFullNum += another.BackToFullNum
+	cur.FuncNum += another.FuncNum
+	cur.ChangedFuncNum += another.ChangedFuncNum
 	cur.FuncXNum += another.FuncXNum
-	cur.FuncXLine += another.FuncXLine
 
 	cur.TotalTimeMs += another.TotalTimeMs
 	cur.FrontTimeMs += another.FrontTimeMs
 	cur.BackTimeMs += another.BackTimeMs
 	cur.PPTimeMs += another.PPTimeMs
-	cur.FuncXTimeMs += another.FuncXTimeMs
 	cur.DiffTimeMs += another.DiffTimeMs
-	cur.OldNGDGTimeMs += another.OldNGDGTimeMs
-	cur.NewNGDGTimeMs += another.NewNGDGTimeMs
+	cur.FuncXTimeMs += another.FuncXTimeMs
+	cur.ASTTimeMs += another.ASTTimeMs
 	cur.FuncVTimeMs += another.FuncVTimeMs
 }
 
 type IClangDirStat struct {
-	CompStatF     *CompStat `json:"compStat"`
-	IncNum        int64     `json:"incNum"`
-	NoChangeNum   int64     `json:"noChangeNum"`
-	BackToFullNum int64     `json:"backToFullNum"`
-	FileNum       int64     `json:"fileNum"`
-	FileSizeB     int64     `json:"fileSizeB"`
-	SrcLoc        int64     `json:"srcLoc"`
-	PPLoc         int64     `json:"ppLoc"`
-	StaTimeMs     int64     `json:"staTimeMs"`
+	CompStatF *CompStat `json:"compStat"`
+	FileNum   int64     `json:"fileNum"`
+	FileSizeB int64     `json:"fileSizeB"`
+	SrcLoc    int64     `json:"srcLoc"`
+	PPLoc     int64     `json:"ppLoc"`
+	StaTimeMs int64     `json:"staTimeMs"`
 }
 
 func NewIClangDirStat() *IClangDirStat {
@@ -107,9 +93,6 @@ func NewIClangDirStat() *IClangDirStat {
 
 func (cur *IClangDirStat) add(another *IClangDirStat) {
 	cur.CompStatF.add(another.CompStatF)
-	cur.IncNum += another.IncNum
-	cur.NoChangeNum += another.NoChangeNum
-	cur.BackToFullNum += another.BackToFullNum
 	cur.FileNum += another.FileNum
 	cur.FileSizeB += another.FileSizeB
 	cur.SrcLoc += another.SrcLoc
@@ -179,16 +162,6 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 		CompStatF: compStat,
 		FileNum:   1,
 		FileSizeB: countDirSizeB(iClangDirPath),
-	}
-
-	if res.CompStatF.CanInc {
-		res.IncNum = 1
-	}
-	if res.CompStatF.NoChange {
-		res.NoChangeNum = 1
-	}
-	if res.CompStatF.BackToFull {
-		res.BackToFullNum = 1
 	}
 
 	res.SrcLoc = countFileLoc(res.CompStatF.InputAbsPath)

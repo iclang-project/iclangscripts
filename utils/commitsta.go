@@ -34,11 +34,12 @@ func NewCommitSta() *CommitSta {
 }
 
 func NewCommitStaX(dirPath string, baseTimestampMs int64, commitId string, buildTimeMs int64) *CommitSta {
-	return &CommitSta{
+	res := &CommitSta{
 		CommitId:      commitId,
 		IClangDirStaF: CalIClangDirStat(dirPath, baseTimestampMs),
 		BuildTimeMs:   buildTimeMs,
 	}
+	return res
 }
 
 func (commitSta *CommitSta) Add(other *CommitSta) {
