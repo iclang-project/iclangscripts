@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"iclangscripts/utils"
 	"io/ioutil"
@@ -14,57 +13,6 @@ import (
 	"sync"
 	"time"
 )
-
-func readFileToStr(filepath string) string {
-	bytes, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		log.Fatalln("Error reading file:", err)
-	}
-	return string(bytes)
-}
-
-func saveStrToFile(filePath string, content string) {
-	err := os.WriteFile(filePath, []byte(content), 0777)
-	if err != nil {
-		log.Fatalln("failed to write to file: %w", err)
-	}
-}
-
-type Info struct {
-	Commit string `json:"commit"`
-	File   string `json:"file"`
-}
-
-func readInfo(infoFilePath string) Info {
-	bytes, err := ioutil.ReadFile(infoFilePath)
-	if err != nil {
-		log.Fatalln("Error reading JSON file:", err)
-	}
-
-	var info Info
-
-	err = json.Unmarshal(bytes, &info)
-	if err != nil {
-		log.Fatalln("Error parsing JSON data:", err)
-	}
-
-	return info
-}
-
-// flag = 0: old -> new
-// flag = 1: new -> old
-func patch(infoFilePath string, oldFuncPath string, newFuncPath string, srcPath string) {
-	info := readInfo(infoFilePath)
-	patchFilePath := filepath.Join(srcPath, info.File)
-
-	patchFileContent := readFileToStr(patchFilePath)
-	oldFuncContent := readFileToStr(oldFuncPath)
-	newFuncContent := readFileToStr(newFuncPath)
-
-	result := strings.Replace(patchFileContent, oldFuncContent, newFuncContent, 1)
-
-	saveStrToFile(patchFilePath, result)
-}
 
 func readChanges100(changes100Path string) []string {
 	res := make([]string, 100)
@@ -97,7 +45,7 @@ func performChanges100(changes100 []string, srcPath string) {
 		newFuncPath := filepath.Join(changes100[i], "new.cpp")
 
 		// new -> old
-		patch(infoFilePath, newFuncPath, oldFuncPath, srcPath)
+		utils.Patch(infoFilePath, newFuncPath, oldFuncPath, srcPath)
 	}
 }
 
@@ -107,7 +55,7 @@ func cancelChange(changePath string, srcPath string) {
 	newFuncPath := filepath.Join(changePath, "new.cpp")
 
 	// old -> new
-	patch(infoFilePath, oldFuncPath, newFuncPath, srcPath)
+	utils.Patch(infoFilePath, oldFuncPath, newFuncPath, srcPath)
 }
 
 func initProject(taskId int, projectPath string, projectLogPath string, projectStaJsonPath string) {
@@ -345,7 +293,7 @@ func main() {
 			env = append(env, "ICLANG="+iClangArgs)
 
 			// Read changes 100
-			baseCommit := readFileToStr(baseCommitPath)
+			baseCommit := utils.ReadFileToStr(baseCommitPath)
 			changes100 := readChanges100(changes100Path)
 
 			// Start
