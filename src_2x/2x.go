@@ -77,11 +77,7 @@ func main() {
 
 			env := os.Environ()
 			if os.Args[5] == "1" {
-				if projectName == "sqlite" {
-					env = append(env, "ICLANG=mode:normal,backupo:true")
-				} else {
-					env = append(env, "ICLANG=mode:normal,backupo:false")
-				}
+				env = append(env, "ICLANG=mode:normal")
 			} else {
 				env = append(env, "ICLANG=mode:profile")
 			}

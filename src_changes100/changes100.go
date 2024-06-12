@@ -342,11 +342,7 @@ func main() {
 
 			// Cal IClang env
 			env := os.Environ()
-			if projectName == "sqlite" {
-				env = append(env, "ICLANG="+iClangArgs+",backupo:true")
-			} else {
-				env = append(env, "ICLANG="+iClangArgs+",backupo:false")
-			}
+			env = append(env, "ICLANG="+iClangArgs)
 
 			// Read changes 100
 			baseCommit := readFileToStr(baseCommitPath)
