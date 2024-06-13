@@ -33,11 +33,10 @@ func readChanges100(changes100Path string) []string {
 	return res
 }
 
-func performChanges100(changes100 []string, srcPath string) {
+func prepareChanges100(changes100 []string, srcPath string, focus map[int]bool) {
 	for i := 0; i < 100; i++ {
-		// todo
-		if i > 31 {
-			return
+		if _, ok := focus[i+1]; !ok {
+			continue
 		}
 
 		infoFilePath := filepath.Join(changes100[i], "info.json")
@@ -100,60 +99,31 @@ func configProject(taskId int, projectPath string, projectLogPath string) {
 	}
 }
 
-func firstFullBuild(taskId int, projectPath string, projectLogPath string, env []string) *utils.CommitSta {
-	fmt.Printf("Task %d first full build\n", taskId)
+func buildProject(taskId int, projectPath string, projectLogPath string, env []string, changeId string) *utils.CommitSta {
+	fmt.Printf("Task %d build %s\n", taskId, changeId)
 
 	curTimestampMs := utils.CurrentTsMs()
 
-	fullBuildCmdStr := "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
+	buildCmdStr := "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
 
-	fullBuildCmd := exec.Command("/bin/bash", "-c", fullBuildCmdStr)
-	fullBuildCmd.Env = env
-	_, err := fullBuildCmd.CombinedOutput()
+	buildCmd := exec.Command("/bin/bash", "-c", buildCmdStr)
+	buildCmd.Env = env
+	_, err := buildCmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("Task %d first full build error, see %s for more details.\n", taskId, projectLogPath)
+		log.Fatalf("Task %d build %s error, see %s for more details.\n", taskId, changeId, projectLogPath)
 	}
 
 	preTimestampMs := curTimestampMs
 	curTimestampMs = utils.CurrentTsMs()
 
-	fmt.Printf("Task %d first full build done: %d ms, \n", taskId, curTimestampMs-preTimestampMs)
+	fmt.Printf("Task %d build %s done: %d ms, \n", taskId, changeId, curTimestampMs-preTimestampMs)
 
-	// First full build sta, regard as a special commit
-	fullBuildSta := utils.NewCommitStaX(projectPath, 0, "firstFull", curTimestampMs-preTimestampMs)
+	buildSta := utils.NewCommitStaX(projectPath, 0, changeId, curTimestampMs-preTimestampMs)
 	//utils.DumpFds();
 
-	fmt.Printf("Task %d first full sta build done: %d ms, \n", taskId, fullBuildSta.IClangDirStaF.StaTimeMs)
+	fmt.Printf("Task %d build %s sta done:: %d ms, \n", taskId, changeId, buildSta.IClangDirStaF.StaTimeMs)
 
-	return fullBuildSta
-}
-
-func incBuild(taskId int, projectPath string, projectLogPath string, env []string, incId int) *utils.CommitSta {
-	curTimestampMs := utils.CurrentTsMs()
-
-	fmt.Printf("Task %d inc build %d\n", taskId, incId)
-
-	incBuildCmdStr := "cd " + projectPath + " && ./build.sh >> " + projectLogPath + " 2>&1"
-
-	incBuildCmd := exec.Command("/bin/bash", "-c", incBuildCmdStr)
-	incBuildCmd.Env = env
-	_, err := incBuildCmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("Task %d inc build %d error, see %s for more details.\n", taskId, incId, projectLogPath)
-	}
-
-	preTimestampMs := curTimestampMs
-	curTimestampMs = utils.CurrentTsMs()
-
-	fmt.Printf("Task %d inc build %d done: %d ms, \n", taskId, incId, curTimestampMs-preTimestampMs)
-
-	// Inc full build sta
-	incBuildSta := utils.NewCommitStaX(projectPath, preTimestampMs, strconv.Itoa(incId), curTimestampMs-preTimestampMs)
-	//utils.DumpFds()
-
-	fmt.Printf("Task %d inc build %d sta done: %d ms, \n", taskId, incId, incBuildSta.IClangDirStaF.StaTimeMs)
-
-	return incBuildSta
+	return buildSta
 }
 
 func fileExists(path string) bool {
@@ -305,31 +275,29 @@ func main() {
 			// 2. First checkout
 			gitCheckout(taskId, gitStr, srcPath, projectLogPath, baseCommit)
 
+			// ---------- Backup handling ----------
 			if backupFull && fileExists(backupFullPath) {
 				cpr(backupFullPath, buildPath)
 			}
 
-			// 3. Perform 100 changes
-			performChanges100(changes100, srcPath)
-
-			// 4. Config
+			// 3. Config
 			configProject(taskId, projectPath, projectLogPath)
 
-			// 5. First full build
+			// 4. First full build
 			commitsSta := utils.NewCommitsSta()
-			commitsSta = append(commitsSta, firstFullBuild(taskId, projectPath, projectLogPath, env))
+			commitsSta = append(commitsSta, buildProject(taskId, projectPath, projectLogPath, env, "full"))
 
+			// ---------- Backup handling ----------
 			if backupFull && !fileExists(backupFullPath) {
 				cpr(buildPath, backupFullPath)
 			}
 
+			// 5. Prepare changes
+			prepareChanges100(changes100, srcPath, focus)
+			buildProject(taskId, projectPath, projectLogPath, env, "prepareChanges")
+
 			// 6. Inc build 100 changes
 			for j := 0; j < 100; j++ {
-				// todo
-				if j > 31 {
-					return
-				}
-
 				incId := j + 1
 
 				if _, ok := focus[incId]; !ok {
@@ -340,7 +308,7 @@ func main() {
 				cancelChange(changes100[j], srcPath)
 
 				// 6.2 Inc build
-				incBuildSta := incBuild(taskId, projectPath, projectLogPath, env, incId)
+				incBuildSta := buildProject(taskId, projectPath, projectLogPath, env, strconv.Itoa(incId))
 				commitsSta = append(commitsSta, incBuildSta)
 				// Save temp json (convenient for intermediate debugging)
 				utils.SaveCommitsStaToFile(commitsSta, projectStaJsonPath)
