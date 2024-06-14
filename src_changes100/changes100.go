@@ -118,7 +118,12 @@ func buildProject(taskId int, projectPath string, projectLogPath string, env []s
 
 	fmt.Printf("Task %d build %s done: %d ms, \n", taskId, changeId, curTimestampMs-preTimestampMs)
 
-	buildSta := utils.NewCommitStaX(projectPath, 0, changeId, curTimestampMs-preTimestampMs)
+	baseTsMs := preTimestampMs
+	if changeId == "full" {
+		baseTsMs = 0
+	}
+
+	buildSta := utils.NewCommitStaX(projectPath, baseTsMs, changeId, curTimestampMs-preTimestampMs)
 	//utils.DumpFds();
 
 	fmt.Printf("Task %d build %s sta done:: %d ms, \n", taskId, changeId, buildSta.IClangDirStaF.StaTimeMs)
