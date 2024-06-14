@@ -161,6 +161,7 @@ func main() {
 		fmt.Println("Usage: src_changes100 <benchmarkdir> <projects> <logdir> <iclangargs> <backupfull> [focus]")
 		fmt.Println("For example: ./src_changes100../ all ./log mode:normal,opt:debug 1 1:2:3")
 		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
+		fmt.Println("      If you want to run test case after building, please set backupfull to 0, or unset focus")
 		os.Exit(1)
 	}
 
@@ -275,15 +276,18 @@ func main() {
 			// 2. First checkout
 			gitCheckout(taskId, gitStr, srcPath, projectLogPath, baseCommit)
 
+			// 3. Prepare changes
+			prepareChanges100(changes100, srcPath, focus)
+
 			// ---------- Backup handling ----------
 			if backupFull && fileExists(backupFullPath) {
 				cpr(backupFullPath, buildPath)
 			}
 
-			// 3. Config
+			// 4. Config
 			configProject(taskId, projectPath, projectLogPath)
 
-			// 4. First full build
+			// 5. First full build
 			commitsSta := utils.NewCommitsSta()
 			commitsSta = append(commitsSta, buildProject(taskId, projectPath, projectLogPath, env, "full"))
 
@@ -291,10 +295,6 @@ func main() {
 			if backupFull && !fileExists(backupFullPath) {
 				cpr(buildPath, backupFullPath)
 			}
-
-			// 5. Prepare changes
-			prepareChanges100(changes100, srcPath, focus)
-			buildProject(taskId, projectPath, projectLogPath, env, "prepareChanges")
 
 			// 6. Inc build 100 changes
 			for j := 0; j < 100; j++ {
