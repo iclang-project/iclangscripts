@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -222,7 +223,13 @@ func CalIClangDirStat(dirPath string, baseTsMs int64) *IClangDirStat {
 
 	res := NewIClangDirStat()
 
-	ch := make(chan *IClangDirStat, 32)
+	buildJStr := os.Getenv("BUILDJ")
+	buildJ, err := strconv.Atoi(buildJStr)
+	if err != nil {
+		buildJ = 32
+	}
+
+	ch := make(chan *IClangDirStat, buildJ)
 
 	go visitProducer(ch, dirPath, baseTsMs)
 	visitConsumer(ch, res)
