@@ -28,6 +28,7 @@ type CompStat struct {
 	FuncNum        int64 `json:"funcNum"`
 	ChangedFuncNum int64 `json:"changedFuncNum"`
 	FuncXNum       int64 `json:"funcXNum"`
+	LexErrNum      int64 `json:"lexErrNum"`
 
 	TotalTimeMs int64 `json:"totalTimeMs"`
 	FrontTimeMs int64 `json:"frontTimeMs"`
@@ -66,6 +67,7 @@ func (cur *CompStat) add(another *CompStat) {
 	cur.FuncNum += another.FuncNum
 	cur.ChangedFuncNum += another.ChangedFuncNum
 	cur.FuncXNum += another.FuncXNum
+	cur.LexErrNum += another.LexErrNum
 
 	cur.TotalTimeMs += another.TotalTimeMs
 	cur.FrontTimeMs += another.FrontTimeMs
