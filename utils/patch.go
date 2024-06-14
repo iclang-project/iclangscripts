@@ -14,7 +14,7 @@ func ReadFileToStr(filepath string) string {
 	if err != nil {
 		log.Fatalln("Error reading file:", err)
 	}
-	return string(bytes)
+	return strings.TrimSpace(string(bytes))
 }
 
 func SaveStrToFile(filePath string, content string) {
