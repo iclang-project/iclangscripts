@@ -243,8 +243,6 @@ func main() {
 			projectName := projects[id]
 			projectPath := filepath.Join(benchmarkDir, projectName)
 			srcPath := filepath.Join(projectPath, "src")
-			buildPath := filepath.Join(projectPath, "build")
-			backupFullPath := filepath.Join(projectPath, "backupfull")
 			changes100Path := filepath.Join(projectPath, "changes100")
 			baseCommitPath := filepath.Join(changes100Path, "commit.txt")
 			projectLogPath := filepath.Join(logDir, projectName, "100commits.log")
