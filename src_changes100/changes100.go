@@ -162,11 +162,10 @@ func cpr(srcDir string, destDir string) {
 }
 
 func main() {
-	if len(os.Args) < 6 {
-		fmt.Println("Usage: src_changes100 <benchmarkdir> <projects> <logdir> <iclangargs> <backupfull> [focus]")
-		fmt.Println("For example: ./src_changes100../ all ./log mode:normal,opt:debug 1 1:2:3")
+	if len(os.Args) < 5 {
+		fmt.Println("Usage: src_changes100 <benchmarkdir> <projects> <logdir> <iclangargs> [focus]")
+		fmt.Println("For example: ./src_changes100../ all ./log mode:normal,opt:debug 2:3")
 		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
-		fmt.Println("      If you want to run test case after building, please set backupfull to 0, or unset focus")
 		os.Exit(1)
 	}
 
@@ -203,14 +202,9 @@ func main() {
 	// Get IClang args
 	iClangArgs := os.Args[4]
 
-	backupFull := false
-	if os.Args[5] == "1" {
-		backupFull = true
-	}
-
 	var focus = make(map[int]bool)
-	if len(os.Args) >= 7 {
-		ss := strings.Split(os.Args[6], ":")
+	if len(os.Args) >= 6 {
+		ss := strings.Split(os.Args[5], ":")
 		for _, s := range ss {
 			i, err := strconv.Atoi(s)
 			if err != nil {
@@ -284,22 +278,12 @@ func main() {
 			// 3. Prepare changes
 			prepareChanges100(changes100, srcPath, focus)
 
-			// ---------- Backup handling ----------
-			if backupFull && fileExists(backupFullPath) {
-				cpr(backupFullPath, buildPath)
-			}
-
 			// 4. Config
 			configProject(taskId, projectPath, projectLogPath)
 
 			// 5. First full build
 			commitsSta := utils.NewCommitsSta()
 			commitsSta = append(commitsSta, buildProject(taskId, projectPath, projectLogPath, env, "full"))
-
-			// ---------- Backup handling ----------
-			if backupFull && !fileExists(backupFullPath) {
-				cpr(buildPath, backupFullPath)
-			}
 
 			// 6. Inc build 100 changes
 			for j := 0; j < 100; j++ {
