@@ -33,10 +33,10 @@ func NewCommitSta() *CommitSta {
 	}
 }
 
-func NewCommitStaX(dirPath string, baseTimestampMs int64, commitId string, buildTimeMs int64) *CommitSta {
+func NewCommitStaX(projectPath string, baseTimestampMs int64, commitId string, buildTimeMs int64) *CommitSta {
 	res := &CommitSta{
 		CommitId:      commitId,
-		IClangDirStaF: CalIClangDirStat(dirPath, baseTimestampMs),
+		IClangDirStaF: CalIClangDirStat(projectPath, baseTimestampMs),
 		BuildTimeMs:   buildTimeMs,
 	}
 	return res

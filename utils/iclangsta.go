@@ -172,7 +172,7 @@ func readIClangDirStat(iClangDirPath string, baseTsMs int64) *IClangDirStat {
 	return res
 }
 
-func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, lim chan int, dirPath string, baseTsMs int64) {
+func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, lim chan int, dirPath string, baseTsMs int64, depth int) {
 	if strings.HasSuffix(dirPath, ".iclang") {
 		wg.Add(1)
 		lim <- 1
@@ -195,16 +195,20 @@ func visit(wg *sync.WaitGroup, ch chan *IClangDirStat, lim chan int, dirPath str
 
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
-			fullPath := filepath.Join(dirPath, fileInfo.Name())
-			visit(wg, ch, lim, fullPath, baseTsMs)
+			if depth == 0 && fileInfo.Name() != "build" && fileInfo.Name() != "src" {
+				// skip
+			} else {
+				fullPath := filepath.Join(dirPath, fileInfo.Name())
+				visit(wg, ch, lim, fullPath, baseTsMs, depth+1)
+			}
 		}
 	}
 }
 
-func visitProducer(ch chan *IClangDirStat, dirPath string, baseTsMs int64) {
+func visitProducer(ch chan *IClangDirStat, projectPath string, baseTsMs int64) {
 	var wg sync.WaitGroup
 	lim := make(chan int, 32)
-	visit(&wg, ch, lim, dirPath, baseTsMs)
+	visit(&wg, ch, lim, projectPath, baseTsMs, 0)
 	wg.Wait()
 	close(ch)
 }
@@ -218,7 +222,7 @@ func visitConsumer(ch chan *IClangDirStat, res *IClangDirStat) {
 // Accumulate all .iclang's status whose EndTsMs(int compile.json) less than baseTsMs in dirPath
 //
 // 32 coroutine pool
-func CalIClangDirStat(dirPath string, baseTsMs int64) *IClangDirStat {
+func CalIClangDirStat(projectPath string, baseTsMs int64) *IClangDirStat {
 	start := time.Now()
 
 	res := NewIClangDirStat()
@@ -231,7 +235,7 @@ func CalIClangDirStat(dirPath string, baseTsMs int64) *IClangDirStat {
 
 	ch := make(chan *IClangDirStat, buildJ)
 
-	go visitProducer(ch, dirPath, baseTsMs)
+	go visitProducer(ch, projectPath, baseTsMs)
 	visitConsumer(ch, res)
 
 	elapsed := time.Since(start)
