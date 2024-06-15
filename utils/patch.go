@@ -9,21 +9,6 @@ import (
 	"strings"
 )
 
-func ReadFileToStr(filepath string) string {
-	bytes, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		log.Fatalln("Error reading file:", err)
-	}
-	return strings.TrimSpace(string(bytes))
-}
-
-func SaveStrToFile(filePath string, content string) {
-	err := os.WriteFile(filePath, []byte(content), 0777)
-	if err != nil {
-		log.Fatalln("failed to write to file: %w", err)
-	}
-}
-
 type Info struct {
 	Commit string `json:"commit"`
 	File   string `json:"file"`
@@ -43,6 +28,18 @@ func readInfo(infoFilePath string) Info {
 	}
 
 	return info
+}
+
+func SaveInfoToFile(info Info, filePath string) {
+	jsonBytes, err := json.MarshalIndent(info, "", "    ")
+	if err != nil {
+		log.Fatalln("Can not encode JSON:", err)
+	}
+
+	err = os.WriteFile(filePath, jsonBytes, 0644)
+	if err != nil {
+		log.Fatalln("Can not save json:", err)
+	}
 }
 
 func Patch(infoFilePath string, oldFuncPath string, newFuncPath string, srcPath string) {

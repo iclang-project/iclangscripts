@@ -131,36 +131,6 @@ func buildProject(taskId int, projectPath string, projectLogPath string, env []s
 	return buildSta
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func cpr(srcDir string, destDir string) {
-	curTimestampMs := utils.CurrentTsMs()
-
-	fmt.Printf("cp -r %s %s\n", srcDir, destDir)
-
-	cmdStr := "cp -r " + srcDir + " " + destDir
-
-	cmd := exec.Command("/bin/bash", "-c", cmdStr)
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalln("cp -r error")
-	}
-
-	preTimestampMs := curTimestampMs
-	curTimestampMs = utils.CurrentTsMs()
-
-	fmt.Printf("cp -r %s %s done: %d ms, \n", srcDir, destDir, curTimestampMs-preTimestampMs)
-}
-
 func main() {
 	if len(os.Args) < 5 {
 		fmt.Println("Usage: src_changes100 <benchmarkdir> <projects> <logdir> <iclangargs> [focus]")
