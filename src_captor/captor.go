@@ -46,6 +46,7 @@ func main() {
 		wgetCmd := exec.Command("/bin/bash", "-c", wgetCmdStr)
 		_, err := wgetCmd.CombinedOutput()
 		if err != nil {
+			_ = os.Remove(oldFilePath)
 			log.Fatalf("%s error: %v", wgetCmdStr, err)
 		}
 	}
@@ -57,6 +58,7 @@ func main() {
 		wgetCmd := exec.Command("/bin/bash", "-c", wgetCmdStr)
 		_, err := wgetCmd.CombinedOutput()
 		if err != nil {
+			_ = os.Remove(newFilePath)
 			log.Fatalf("%s error: %v", wgetCmdStr, err)
 		}
 	}
