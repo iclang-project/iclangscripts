@@ -134,7 +134,7 @@ func buildProject(taskId int, projectPath string, projectLogPath string, env []s
 func main() {
 	if len(os.Args) < 5 {
 		fmt.Println("Usage: src_changes100 <benchmarkdir> <projects> <logdir> <iclangargs> [focus]")
-		fmt.Println("For example: ./src_changes100../ all ./log mode:normal,opt:debug 2:3")
+		fmt.Println("For example: ./src_changes100 ../ all ./log mode:normal 2:3")
 		fmt.Println("Note: <projects> can be 'all', or your projects separated by ':'. For example: llvm:cpython")
 		os.Exit(1)
 	}
