@@ -44,6 +44,8 @@ type CompStat struct {
 	StartTsMs int64 `json:"startTsMs"`
 	MidTsMs   int64 `json:"midTsMs"`
 	EndTsMs   int64 `json:"endTsMs"`
+
+	TotalNoChangeTimeMs int64 `json:"totalNoChangeTimeMs"`
 }
 
 func readCompStat(filePath string) *CompStat {
@@ -57,6 +59,10 @@ func readCompStat(filePath string) *CompStat {
 	err = json.Unmarshal(data, &compStat)
 	if err != nil {
 		log.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	if compStat.NoChangeNum > 0 {
+		compStat.TotalNoChangeTimeMs = compStat.TotalTimeMs
 	}
 
 	return &compStat
