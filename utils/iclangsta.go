@@ -124,6 +124,9 @@ func countDirSizeB(dirPath string) int64 {
 		if fileInfo.IsDir() {
 			continue
 		}
+		if fileInfo.Name() == "backup.o" {
+			continue
+		}
 		res += fileInfo.Size()
 	}
 
